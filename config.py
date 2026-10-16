@@ -90,7 +90,12 @@ GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service_
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GCP_SA_KEY", "")
 
 # ==========================================
-# 4. مسارات الملفات المحلية (Local Output)
+# 4. قاعدة البيانات (Database Configuration)
+# ==========================================
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+# ==========================================
+# 5. مسارات الملفات المحلية (Local Output)
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HISTORY_FILE = os.path.join(BASE_DIR, "seen_jobs.json")

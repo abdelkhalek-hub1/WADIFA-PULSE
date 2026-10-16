@@ -1,33 +1,35 @@
-name: "Automated Daily Concours Scraper & Notifier"
+name: Daily Concours Surveillance Engine
 
 on:
   schedule:
+    # Runs everyday at 08:00 UTC (09:00 Moroccan time)
     - cron: '0 8 * * *'
   workflow_dispatch:
 
 jobs:
-  scrape-and-notify:
+  surveillance-and-alerts:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
 
     steps:
-      - name: 📥 جلب الكود من المستودع
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: 🐍 تثبيت بايثون
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: 📦 تثبيت الحزم المطلوبة
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 🚀 تشغيل البوت وفحص المباريات وإرسال الإشعارات
+      - name: Execute surveillance pipeline and dispatch alerts
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           EMAIL_ENABLED: "true"
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
@@ -46,9 +48,3 @@ jobs:
         run: |
           python main.py
 
-      - name: 💾 حفظ السجل والملفات المحدثة في المستودع
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action Bot"
-          git add seen_jobs.json concours_actifs.xlsx concours_actifs.html || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: تحديث المباريات النشطة والسجل [skip ci]" && git push)

@@ -1,9 +1,35 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+
+# Environment and secrets
 .env
+*.env
 service_account.json
+gcp_key.json
+
+# Virtual Environments
 .venv/
 env/
 venv/
+ENV/
+
+# Local databases and runtime state
 wadifa_local.db
+*.db
+*.sqlite
+*.sqlite3
+seen_jobs.json
+
+# Generated exports and reports
+concours_actifs.xlsx
+concours_actifs.html
+*.xlsx
+*.csv
+
+# OS specific
+.DS_Store
+Thumbs.db
+

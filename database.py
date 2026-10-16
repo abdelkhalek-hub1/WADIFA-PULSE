@@ -6,12 +6,13 @@ from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
 import config
 
-# Paramètres de connexion Supabase PostgreSQL
-DB_USER = "postgres.xiyilbkzcaczzmbthssl"
-DB_PASS = "wadifa123@dc"
-DB_HOST = "aws-0-eu-west-1.pooler.supabase.com"
-DB_PORT = 6543
-DB_NAME = "postgres"
+# Paramètres de connexion PostgreSQL / Supabase
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DB_USER = os.getenv("DB_USER", "").strip()
+DB_PASS = os.getenv("DB_PASS", "").strip()
+DB_HOST = os.getenv("DB_HOST", "").strip()
+DB_PORT = int(os.getenv("DB_PORT", "6543"))
+DB_NAME = os.getenv("DB_NAME", "postgres").strip()
 
 SQLITE_PATH = os.path.join(config.BASE_DIR, "wadifa_local.db")
 
@@ -28,19 +29,32 @@ def get_pg_pool():
                 try:
                     import psycopg2
                     from psycopg2 import pool
-                    _pg_pool = pool.ThreadedConnectionPool(
-                        minconn=1,
-                        maxconn=10,
-                        user=DB_USER,
-                        password=DB_PASS,
-                        host=DB_HOST,
-                        port=DB_PORT,
-                        database=DB_NAME,
-                        sslmode="require",
-                        connect_timeout=8
-                    )
+                    
+                    db_url = os.getenv("DATABASE_URL", "").strip()
+                    if db_url:
+                        _pg_pool = pool.ThreadedConnectionPool(
+                            minconn=1,
+                            maxconn=10,
+                            dsn=db_url,
+                            sslmode="require",
+                            connect_timeout=8
+                        )
+                    elif DB_USER and DB_PASS and DB_HOST:
+                        _pg_pool = pool.ThreadedConnectionPool(
+                            minconn=1,
+                            maxconn=10,
+                            user=DB_USER,
+                            password=DB_PASS,
+                            host=DB_HOST,
+                            port=DB_PORT,
+                            database=DB_NAME,
+                            sslmode="require",
+                            connect_timeout=8
+                        )
+                    else:
+                        _pg_pool = False
                 except Exception as e:
-                    print(f"ℹ️ Connexion Supabase indisponible ({e}), utilisation de la base locale SQLite.")
+                    print(f"Connexion Supabase indisponible ({e}), bascule vers SQLite local.")
                     _pg_pool = False
     return _pg_pool if _pg_pool is not False else None
 
