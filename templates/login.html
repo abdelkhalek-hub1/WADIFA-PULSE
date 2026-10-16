@@ -1,124 +1,189 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full bg-slate-950">
+<html lang="fr" class="h-full bg-slate-900">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion Sécurisée — WadifaBot Maroc</title>
+    <title>Authentification — WadifaBot Maroc</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Modern Typography: Plus Jakarta Sans & JetBrains Mono for metrics -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        sovereign: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            950: '#052e16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
-        .bg-mesh {
-            background-color: #090d16;
-            background-image: 
-                radial-gradient(at 10% 20%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
-                radial-gradient(at 90% 10%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 50% 90%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
-        }
-        @keyframes pulse-slow {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
-        }
-        .animate-ambient { animation: pulse-slow 8s infinite ease-in-out; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .border-subtle { border-color: rgba(226, 232, 240, 0.8); }
     </style>
 </head>
-<body class="h-full bg-mesh text-slate-100 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden select-none">
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col justify-between antialiased selection:bg-emerald-700 selection:text-white">
 
-    <!-- Ambient Glow Circles -->
-    <div class="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none animate-ambient"></div>
-    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none animate-ambient" style="animation-delay: 4s;"></div>
-
-    <div class="max-w-md w-full relative z-10">
-        <!-- Brand Header -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-xl shadow-emerald-500/20 mb-4">
-                <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
-                    <i class="ph-fill ph-briefcase text-3xl text-emerald-400"></i>
+    <!-- Top Sovereign Masthead -->
+    <header class="border-b border-slate-800/80 bg-slate-950/80 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-800/40 border border-emerald-700/60 flex items-center justify-center text-emerald-400">
+                    <i class="ph-bold ph-shield-check text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">Observatoire Public</span>
+                    <span class="text-slate-600 mx-2">&middot;</span>
+                    <span class="text-xs font-semibold text-slate-300">Royaume du Maroc</span>
                 </div>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">WadifaBot Maroc</h1>
-            <p class="text-sm text-slate-400 mt-1.5">Veille autonome des concours &middot; Spécialité Web Full Stack</p>
+            <div class="hidden sm:flex items-center space-x-3 text-xs text-slate-400 font-mono">
+                <span class="inline-flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>PostgreSQL 17 Connecté</span>
+                </span>
+            </div>
         </div>
+    </header>
 
-        <!-- Glassmorphism Card -->
-        <div class="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-7 sm:p-9 shadow-2xl shadow-black/60">
+    <!-- Main Container: Editorial Split-Layout -->
+    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div class="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
             
-            {% if error %}
-            <div class="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-start space-x-3 animate-fade-in">
-                <i class="ph-bold ph-warning-circle text-lg flex-shrink-0 text-rose-400 mt-0.5"></i>
-                <div class="flex-1 font-medium leading-relaxed">{{ error }}</div>
-            </div>
-            {% endif %}
-
-            <form class="space-y-5" action="/login" method="POST" id="loginForm" onsubmit="handleSubmit(event)">
-                <!-- Email Input -->
+            <!-- Left Editorial & Context Panel -->
+            <div class="lg:col-span-5 bg-gradient-to-b from-slate-900 to-slate-950 p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
                 <div>
-                    <label for="email" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                        Adresse Email
-                    </label>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
-                            <i class="ph-bold ph-envelope text-lg"></i>
-                        </div>
-                        <input id="email" name="email" type="email" required autofocus autocomplete="email" 
-                            placeholder="abdelkhalekouaraqy@gmail.com" 
-                            class="w-full pl-11 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200">
+                    <!-- Portal Emblem -->
+                    <div class="w-12 h-12 rounded-xl bg-slate-800/90 border border-slate-700 flex items-center justify-center text-emerald-400 mb-6">
+                        <i class="ph-bold ph-buildings text-2xl"></i>
                     </div>
+
+                    <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+                        Système de Veille des Concours Publics
+                    </h2>
+
+                    <p class="text-xs text-slate-400 mt-3 leading-relaxed">
+                        Indexation continue, déduplication et analyse d'éligibilité pour les profils 
+                        <strong class="text-slate-200 font-semibold">Développement Digital & Web Full Stack</strong> (Technicien Spécialisé, 3ème grade).
+                    </p>
                 </div>
 
-                <!-- Password Input -->
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label for="password" class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                            Mot de passe
-                        </label>
-                        <span class="text-[11px] text-slate-500">Sécurisé Supabase</span>
+                <!-- Structured Audit Specs -->
+                <div class="mt-8 pt-6 border-t border-slate-800/80 space-y-3">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Portail officiel</span>
+                        <span class="font-mono text-slate-300">emploi-public.ma</span>
                     </div>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
-                            <i class="ph-bold ph-lock-key text-lg"></i>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Flux d'annonces</span>
+                        <span class="font-mono text-slate-300">wadifa-info.com</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Moteur de règles</span>
+                        <span class="font-mono text-emerald-400">Bac+2 / Bac+3 Informatique</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Authentication Form -->
+            <div class="lg:col-span-7 bg-slate-900 p-8 sm:p-10 flex flex-col justify-center">
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-white tracking-tight">Accès Sécurisé</h3>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Saisissez vos identifiants pour accéder au tableau de bord.
+                    </p>
+                </div>
+
+                {% if error %}
+                <div class="mb-6 p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs flex items-start space-x-3">
+                    <i class="ph-bold ph-warning-circle text-base flex-shrink-0 text-rose-400 mt-0.5"></i>
+                    <div class="flex-1 font-medium leading-relaxed">{{ error }}</div>
+                </div>
+                {% endif %}
+
+                <form class="space-y-4" action="/login" method="POST" id="loginForm" onsubmit="handleSubmit(event)">
+                    <!-- Email Input -->
+                    <div>
+                        <label for="email" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                            Adresse électronique
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                <i class="ph-bold ph-envelope text-base"></i>
+                            </div>
+                            <input id="email" name="email" type="email" required autofocus autocomplete="email" 
+                                placeholder="abdelkhalekouaraqy@gmail.com" 
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
                         </div>
-                        <input id="password" name="password" type="password" required autocomplete="current-password" 
-                            placeholder="••••••••••••" 
-                            class="w-full pl-11 pr-11 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200">
-                        <button type="button" onclick="togglePass()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors">
-                            <i id="eyeIcon" class="ph-bold ph-eye text-lg"></i>
+                    </div>
+
+                    <!-- Password Input -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="password" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                Mot de passe
+                            </label>
+                            <span class="text-[11px] font-mono text-slate-500">Hachage PBKDF2</span>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                <i class="ph-bold ph-lock text-base"></i>
+                            </div>
+                            <input id="password" name="password" type="password" required autocomplete="current-password" 
+                                placeholder="••••••••••••" 
+                                class="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
+                            <button type="button" onclick="togglePass()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors" title="Afficher/masquer le mot de passe">
+                                <i id="eyeIcon" class="ph-bold ph-eye text-base"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="btnSubmit" 
+                            class="w-full py-3 px-4 rounded-xl text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 transition-colors shadow-sm flex items-center justify-center space-x-2">
+                            <span id="btnText">Ouvrir la session</span>
+                            <i id="btnIcon" class="ph-bold ph-arrow-right text-sm"></i>
+                            <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </button>
                     </div>
-                </div>
+                </form>
 
-                <!-- Submit Button -->
-                <div class="pt-2">
-                    <button type="submit" id="btnSubmit" 
-                        class="w-full py-3.5 px-4 rounded-xl text-sm font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 active:scale-[0.98] transition-all duration-150 shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2">
-                        <span id="btnText">Accéder au Tableau de Bord</span>
-                        <i id="btnIcon" class="ph-bold ph-arrow-right text-base"></i>
-                        <svg id="btnSpinner" class="hidden animate-spin h-5 w-5 text-slate-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </button>
+                <div class="mt-6 pt-5 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                    <span>Session chiffrée SSL</span>
+                    <span>Version 2.4 Production</span>
                 </div>
-            </form>
-
-            <div class="mt-6 pt-5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
-                <span class="flex items-center space-x-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>PostgreSQL 17 Actif</span>
-                </span>
-                <span>Version 2.0 Full Stack</span>
             </div>
         </div>
+    </main>
 
-        <p class="text-center text-xs text-slate-600 mt-6">
-            Système privé réservé &middot; emploi-public.ma + wadifa-info.com
-        </p>
-    </div>
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-4 px-6 text-center text-xs text-slate-500 font-mono">
+        WadifaBot Maroc &middot; Surveillance autonome conforme aux avis de concours du Journal Officiel
+    </footer>
 
     <script>
         function togglePass() {
@@ -126,10 +191,10 @@
             const eyeIcon = document.getElementById('eyeIcon');
             if (passInput.type === 'password') {
                 passInput.type = 'text';
-                eyeIcon.className = 'ph-bold ph-eye-slash text-lg';
+                eyeIcon.className = 'ph-bold ph-eye-slash text-base';
             } else {
                 passInput.type = 'password';
-                eyeIcon.className = 'ph-bold ph-eye text-lg';
+                eyeIcon.className = 'ph-bold ph-eye text-base';
             }
         }
 
@@ -140,8 +205,8 @@
             const spinner = document.getElementById('btnSpinner');
 
             btn.disabled = true;
-            btn.classList.add('opacity-90', 'cursor-not-allowed');
-            text.innerText = 'Connexion en cours...';
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            text.innerText = 'Vérification...';
             icon.classList.add('hidden');
             spinner.classList.remove('hidden');
         }

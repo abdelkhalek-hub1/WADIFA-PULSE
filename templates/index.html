@@ -1,288 +1,301 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full bg-slate-50">
+<html lang="fr" class="h-full bg-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WadifaBot Maroc — Veille Concours Publics Full Stack</title>
+    <title>WadifaBot Maroc — Veille Officielle des Concours Publics</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Phosphor Icons (Vector SVG) -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Modern Font: Plus Jakarta Sans -->
+    
+    <!-- Typography: Plus Jakarta Sans for UI, JetBrains Mono for metadata & dates -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
                     },
                     colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            900: '#064e3b',
+                        sovereign: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            950: '#052e16',
                         }
                     }
                 }
             }
         }
     </script>
+    
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass-header {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        
+        /* Editorial borders and card lift */
+        .admin-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
-        .card-hover {
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        .admin-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
         }
-        .card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.03);
-        }
-        /* Custom scrollbar */
+
+        /* Subtle scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f8fafc; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="h-full bg-slate-50 text-slate-800 flex flex-col antialiased selection:bg-emerald-600 selection:text-white">
+<body class="h-full bg-slate-100 text-slate-800 flex flex-col antialiased selection:bg-emerald-800 selection:text-white">
 
-    <!-- Toast Notifications Container -->
+    <!-- Toast Notification Engine (Bottom-Right) -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- Sticky Navigation Header -->
-    <header class="glass-header border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-            <!-- Brand / Logo -->
-            <div class="flex items-center space-x-3.5 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xl shadow-md shadow-emerald-600/20 flex-shrink-0">
-                    <i class="ph-fill ph-briefcase"></i>
+    <!-- Sovereign Top Masthead -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="h-16 flex items-center justify-between gap-4">
+                
+                <!-- Brand & Official Institutional Lockup -->
+                <div class="flex items-center space-x-3.5 min-w-0">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-900 border border-emerald-800 flex items-center justify-center text-white flex-shrink-0 shadow-xs">
+                        <i class="ph-bold ph-shield-check text-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold tracking-wider uppercase text-emerald-900">WadifaBot Maroc</span>
+                            <span class="text-slate-300">&middot;</span>
+                            <span class="text-xs font-semibold text-slate-500">Observatoire de l'Emploi Public</span>
+                        </div>
+                        <p class="text-xs text-slate-600 truncate mt-0.5">
+                            Indexation ciblée : <span id="profileName" class="font-bold text-slate-900">Développement Web Full Stack</span>
+                        </p>
+                    </div>
                 </div>
-                <div class="min-w-0">
+
+                <!-- Action Controls -->
+                <div class="flex items-center space-x-2.5 flex-shrink-0">
+                    <!-- Export Excel -->
+                    <button onclick="downloadExcel()" title="Exporter le registre en fichier Excel" 
+                        class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 active:scale-98 transition shadow-xs">
+                        <i class="ph-bold ph-file-xls text-emerald-700 mr-1.5 text-sm"></i>
+                        <span class="hidden sm:inline">Export Excel</span>
+                    </button>
+
+                    <!-- Instant Refresh Button -->
+                    <button id="btnScrape" onclick="triggerScrape()" title="Lancer une synchronisation en direct"
+                        class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-900 active:scale-98 transition shadow-xs">
+                        <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise mr-1.5 text-xs transition-transform duration-500"></i>
+                        <span id="scrapeText">Actualiser</span>
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="h-5 w-px bg-slate-200"></div>
+
+                    <!-- User Account & Logout -->
                     <div class="flex items-center space-x-2">
-                        <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">WadifaBot Maroc</h1>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            v2.0 Pro
-                        </span>
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs" title="{{ user.email }}">
+                            {{ user.name[0] if user.name else 'A' }}
+                        </div>
+                        <a href="/logout" title="Fermer la session" 
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition">
+                            <i class="ph-bold ph-sign-out text-base"></i>
+                        </a>
                     </div>
-                    <p class="text-xs text-slate-500 truncate mt-0.5">
-                        Profil ciblé : <span id="profileName" class="font-semibold text-emerald-700">Développement Web Full Stack</span>
-                    </p>
                 </div>
-            </div>
 
-            <!-- Header Action Controls -->
-            <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                <!-- Export Excel -->
-                <button onclick="downloadExcel()" title="Exporter en fichier Excel" 
-                    class="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-xs">
-                    <i class="ph-bold ph-microsoft-excel-logo text-emerald-600 mr-1.5 text-sm"></i>
-                    <span class="hidden sm:inline">Export Excel</span>
-                </button>
-
-                <!-- Scrape / Refresh -->
-                <button id="btnScrape" onclick="triggerScrape()" title="Lancer une recherche en direct"
-                    class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all shadow-md shadow-emerald-600/20">
-                    <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise text-sm mr-1.5 transition-transform duration-500"></i>
-                    <span id="scrapeText">Actualiser</span>
-                </button>
-
-                <!-- Divider -->
-                <div class="h-6 w-px bg-slate-200"></div>
-
-                <!-- User Profile & Logout -->
-                <div class="flex items-center space-x-2">
-                    <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs shadow-xs" title="{{ user.email }}">
-                        {{ user.name[0] if user.name else 'A' }}
-                    </div>
-                    <a href="/logout" title="Se déconnecter" 
-                        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-all">
-                        <i class="ph-bold ph-sign-out text-lg"></i>
-                    </a>
-                </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- Main Workspace -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Top Bento KPI Statistics -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <!-- 1. Total Concours -->
-            <div onclick="setTab('all')" 
-                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 card-hover cursor-pointer flex items-center justify-between group">
-                <div>
-                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Concours Actifs</span>
-                    <span id="statTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-0.5 block">--</span>
-                    <span class="text-[11px] text-slate-500 font-medium">Spécialité Full Stack</span>
+        <!-- Executive Metrics Ledger (Unified High-Density Bar) -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-xs divide-y sm:divide-y-0 sm:divide-x divide-slate-100 grid grid-cols-2 sm:grid-cols-4">
+            
+            <!-- Metric 1: Total Concours -->
+            <div onclick="setTab('all')" class="p-4 sm:p-5 cursor-pointer hover:bg-slate-50/60 transition group">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Concours Actifs</span>
+                <div class="flex items-baseline space-x-2 mt-1">
+                    <span id="statTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono tabular-nums leading-none">--</span>
+                    <span class="text-xs text-slate-400 font-medium">avis</span>
                 </div>
-                <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
-                    <i class="ph-bold ph-briefcase"></i>
-                </div>
+                <p class="text-[11px] text-slate-500 mt-1 truncate">Profil Digital & Web</p>
             </div>
 
-            <!-- 2. Urgents (<= 3j) -->
-            <div onclick="setUrgencyFilter('urgent')" 
-                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-rose-300 card-hover cursor-pointer flex items-center justify-between group">
-                <div>
-                    <span class="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">Urgents (≤ 3 jours)</span>
-                    <span id="statUrgent" class="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-0.5 block">--</span>
-                    <span class="text-[11px] text-rose-600/80 font-medium">Délai imminent</span>
+            <!-- Metric 2: Urgents (<= 3j) -->
+            <div onclick="setUrgencyFilter('urgent')" class="p-4 sm:p-5 cursor-pointer hover:bg-slate-50/60 transition group">
+                <div class="flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                    <span class="text-[11px] font-bold text-rose-700 uppercase tracking-wider">Échéance Imminente</span>
                 </div>
-                <div class="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
-                    <i class="ph-bold ph-clock-countdown"></i>
+                <div class="flex items-baseline space-x-2 mt-1">
+                    <span id="statUrgent" class="text-2xl sm:text-3xl font-extrabold text-rose-700 font-mono tabular-nums leading-none">--</span>
+                    <span class="text-xs text-rose-600/80 font-medium">≤ 3 jours</span>
                 </div>
+                <p class="text-[11px] text-rose-600/80 mt-1 truncate">Clôture imminente</p>
             </div>
 
-            <!-- 3. Favoris -->
-            <div onclick="setTab('favorites')" 
-                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-300 card-hover cursor-pointer flex items-center justify-between group">
-                <div>
-                    <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">Mes Favoris</span>
-                    <span id="statFavorites" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-0.5 block">--</span>
-                    <span class="text-[11px] text-slate-500 font-medium">Offres sauvegardées</span>
+            <!-- Metric 3: Favoris -->
+            <div onclick="setTab('favorites')" class="p-4 sm:p-5 cursor-pointer hover:bg-slate-50/60 transition group">
+                <div class="flex items-center space-x-1.5">
+                    <i class="ph-fill ph-star text-amber-500 text-xs"></i>
+                    <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Dossiers Favoris</span>
                 </div>
-                <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
-                    <i class="ph-fill ph-star"></i>
+                <div class="flex items-baseline space-x-2 mt-1">
+                    <span id="statFavorites" class="text-2xl sm:text-3xl font-extrabold text-amber-700 font-mono tabular-nums leading-none">--</span>
+                    <span class="text-xs text-amber-700/80 font-medium">sélectionnés</span>
                 </div>
+                <p class="text-[11px] text-slate-500 mt-1 truncate">Veille prioritaire</p>
             </div>
 
-            <!-- 4. Postulés -->
-            <div onclick="setTab('applied')" 
-                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-emerald-300 card-hover cursor-pointer flex items-center justify-between group">
-                <div>
-                    <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Candidatures</span>
-                    <span id="statApplied" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-0.5 block">--</span>
-                    <span class="text-[11px] text-slate-500 font-medium">Dossiers déposés</span>
+            <!-- Metric 4: Postulés -->
+            <div onclick="setTab('applied')" class="p-4 sm:p-5 cursor-pointer hover:bg-slate-50/60 transition group">
+                <div class="flex items-center space-x-1.5">
+                    <i class="ph-bold ph-check-circle text-emerald-700 text-xs"></i>
+                    <span class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Candidatures</span>
                 </div>
-                <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
-                    <i class="ph-bold ph-check-circle"></i>
+                <div class="flex items-baseline space-x-2 mt-1">
+                    <span id="statApplied" class="text-2xl sm:text-3xl font-extrabold text-emerald-800 font-mono tabular-nums leading-none">--</span>
+                    <span class="text-xs text-emerald-700/80 font-medium">déposées</span>
                 </div>
+                <p class="text-[11px] text-slate-500 mt-1 truncate">Dossiers transmis</p>
             </div>
-        </div>
 
-        <!-- Filter & Control Panel -->
-        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
-            <!-- Tabs & View Switcher Row -->
+        </section>
+
+        <!-- Command Bar: Tabs, Views & Filters -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3.5">
+            
+            <!-- Row 1: Segmented Tab Controls & Layout Switcher -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <!-- Tab Buttons -->
-                <div class="flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs sm:text-sm font-semibold text-slate-500">
+                <!-- Tabs -->
+                <nav class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0 text-xs font-semibold text-slate-600" aria-label="Onglets de veille">
                     <button onclick="setTab('all')" id="tab-all" 
-                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 bg-emerald-50 text-emerald-800 font-bold shadow-xs">
-                        <i class="ph-bold ph-squares-four text-base"></i>
-                        <span>Tous les concours</span>
+                        class="px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 bg-slate-900 text-white font-bold shadow-xs">
+                        <i class="ph-bold ph-list-dashes text-sm"></i>
+                        <span>Tous les avis</span>
                     </button>
                     <button onclick="setTab('favorites')" id="tab-favorites" 
-                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 hover:bg-slate-100 hover:text-slate-700">
-                        <i class="ph-fill ph-star text-amber-500 text-base"></i>
+                        class="px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-900">
+                        <i class="ph-fill ph-star text-amber-500 text-sm"></i>
                         <span>Favoris</span>
-                        <span id="countFav" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">0</span>
+                        <span id="countFav" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">0</span>
                     </button>
                     <button onclick="setTab('applied')" id="tab-applied" 
-                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 hover:bg-slate-100 hover:text-slate-700">
-                        <i class="ph-bold ph-check-circle text-emerald-600 text-base"></i>
+                        class="px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-900">
+                        <i class="ph-bold ph-check text-emerald-700 text-sm"></i>
                         <span>Postulés</span>
-                        <span id="countApplied" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">0</span>
+                        <span id="countApplied" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">0</span>
                     </button>
                     <button onclick="setTab('history')" id="tab-history" 
-                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 hover:bg-slate-100 hover:text-slate-700">
-                        <i class="ph-bold ph-clock-counter-clockwise text-base"></i>
-                        <span>Historique quotidien</span>
+                        class="px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-900">
+                        <i class="ph-bold ph-clock-counter-clockwise text-sm"></i>
+                        <span>Journal d'historique</span>
                     </button>
-                </div>
+                </nav>
 
                 <!-- View Switcher (Cards vs Table) -->
-                <div id="viewControls" class="flex items-center space-x-1 self-end sm:self-auto bg-slate-100 p-1 rounded-xl">
-                    <button onclick="setView('cards')" id="btnViewCards" title="Vue Cartes" 
-                        class="p-1.5 rounded-lg text-slate-800 bg-white shadow-xs transition-all">
-                        <i class="ph-bold ph-grid-four text-base"></i>
+                <div id="viewControls" class="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 self-end sm:self-auto">
+                    <button onclick="setView('cards')" id="btnViewCards" title="Mode Fiches" 
+                        class="px-2 py-1 rounded-md text-xs font-semibold text-slate-900 bg-white shadow-xs transition">
+                        <i class="ph-bold ph-squares-four text-sm"></i>
                     </button>
-                    <button onclick="setView('table')" id="btnViewTable" title="Vue Tableau" 
-                        class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-all">
-                        <i class="ph-bold ph-table text-base"></i>
+                    <button onclick="setView('table')" id="btnViewTable" title="Mode Tableau Dense" 
+                        class="px-2 py-1 rounded-md text-xs font-semibold text-slate-500 hover:text-slate-900 transition">
+                        <i class="ph-bold ph-table text-sm"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Instant Search & Filter Bar -->
+            <!-- Row 2: Search Input & Select Filters (Hidden on History Tab) -->
             <div id="filterSection" class="space-y-3">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
-                    <!-- Search Input with Clear Button -->
-                    <div class="md:col-span-6 relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-600 transition-colors">
-                            <i class="ph-bold ph-magnifying-glass text-base"></i>
+                    
+                    <!-- Search with Clear Button -->
+                    <div class="md:col-span-6 relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="ph-bold ph-magnifying-glass text-sm"></i>
                         </div>
                         <input type="text" id="searchInput" oninput="applyFilters()" 
-                            placeholder="Rechercher par organisme, ministère, spécialité... (Touche /)" 
-                            class="w-full pl-10 pr-9 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 transition-all">
+                            placeholder="Filtrer par ministère, organisme, spécialité... (Raccourci /)" 
+                            class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:bg-white focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition">
                         <button id="btnClearSearch" onclick="clearSearch()" 
-                            class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                            <i class="ph-bold ph-x-circle text-base"></i>
+                            class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600">
+                            <i class="ph-bold ph-x-circle text-sm"></i>
                         </button>
                     </div>
 
                     <!-- Source Selector -->
                     <div class="md:col-span-3">
                         <select id="sourceFilter" onchange="applyFilters()" 
-                            class="w-full px-3 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-emerald-600 transition-all">
-                            <option value="all">Toutes les sources</option>
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-slate-400 transition">
+                            <option value="all">Toutes les sources officielles</option>
                             <option value="emploi-public.ma">emploi-public.ma (Portail Officiel)</option>
-                            <option value="wadifa-info.com">wadifa-info.com</option>
+                            <option value="wadifa-info.com">wadifa-info.com (Portail National)</option>
                         </select>
                     </div>
 
                     <!-- Urgency Selector -->
                     <div class="md:col-span-3">
                         <select id="urgencyFilter" onchange="applyFilters()" 
-                            class="w-full px-3 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-emerald-600 transition-all">
-                            <option value="all">Tous les délais</option>
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-slate-400 transition">
+                            <option value="all">Tous les délais de clôture</option>
                             <option value="urgent">Urgents (≤ 3 jours)</option>
-                            <option value="soon">Bientôt (≤ 7 jours)</option>
+                            <option value="soon">Imminents (≤ 7 jours)</option>
                             <option value="safe">Valides (> 7 jours)</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Quick Filter Tags -->
-                <div class="flex items-center space-x-2 text-xs overflow-x-auto pb-1 text-slate-500">
-                    <span class="font-bold text-slate-400 mr-1 flex-shrink-0">Filtres rapides :</span>
-                    <button onclick="quickFilter('')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Tous</button>
-                    <button onclick="quickFilter('Full Stack')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Full Stack</button>
-                    <button onclick="quickFilter('Développement')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Développement Digital</button>
-                    <button onclick="quickFilter('Technicien')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Technicien 3ème grade</button>
+                <!-- Fast Filter Chips -->
+                <div class="flex items-center space-x-1.5 text-xs overflow-x-auto pb-0.5 text-slate-500">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Raccourcis :</span>
+                    <button onclick="quickFilter('')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Tous</button>
+                    <button onclick="quickFilter('Full Stack')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Full Stack</button>
+                    <button onclick="quickFilter('Développement')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Développement Digital</button>
+                    <button onclick="quickFilter('Technicien')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Technicien 3ème grade</button>
                 </div>
             </div>
-        </div>
 
-        <!-- Section 1 : Cards View (Responsive Grid) -->
-        <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <!-- Dynamically populated or rendered from LocalStorage -->
-        </div>
+        </section>
 
-        <!-- Section 2 : Table View -->
-        <div id="tableView" class="hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <!-- View 1: Card Grid (Editorial Administrative Cards) -->
+        <section id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Dynamically populated or loaded from LocalStorage -->
+        </section>
+
+        <!-- View 2: High-Density Table Grid -->
+        <section id="tableView" class="hidden bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50/80 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
                         <tr>
-                            <th class="py-4 px-5">Organisme & Poste</th>
-                            <th class="py-4 px-4">Diplômes & Spécialités</th>
-                            <th class="py-4 px-4">Date Limite</th>
-                            <th class="py-4 px-4">Délai</th>
-                            <th class="py-4 px-4">Source</th>
-                            <th class="py-4 px-4">Statut</th>
-                            <th class="py-4 px-5 text-right">Actions</th>
+                            <th class="py-3 px-4">Organisme & Poste</th>
+                            <th class="py-3 px-4">Diplômes & Spécialités</th>
+                            <th class="py-3 px-4">Date Limite</th>
+                            <th class="py-3 px-4">Délai Restant</th>
+                            <th class="py-3 px-4">Source</th>
+                            <th class="py-3 px-4">Statut</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100">
@@ -290,29 +303,29 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
-        <!-- Section 3 : Historique Quotidien View -->
-        <div id="historyView" class="hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-            <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- View 3: Daily History Ledger -->
+        <section id="historyView" class="hidden bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
                 <div>
-                    <h2 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Historique des Veilles Quotidiennes</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Enregistrement automatique synchronisé avec Supabase PostgreSQL</p>
+                    <h2 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Journal Quotidien d'Exécution</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Audit rétrospectif des sessions d'agrégation synchronisées avec Supabase PostgreSQL</p>
                 </div>
-                <div class="inline-flex items-center space-x-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Synchronisation Cloud Active</span>
+                <div class="inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 font-mono">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    <span>Télémétrie Cloud Active</span>
                 </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
                         <tr>
-                            <th class="py-4 px-6">Date de veille</th>
-                            <th class="py-4 px-5">Total détecté</th>
-                            <th class="py-4 px-5">Concours Urgents</th>
-                            <th class="py-4 px-5">Sources interrogées</th>
-                            <th class="py-4 px-6 text-right">Offres Détectées</th>
+                            <th class="py-3 px-5">Date d'Exécution</th>
+                            <th class="py-3 px-4">Volume Détecté</th>
+                            <th class="py-3 px-4">Concours Urgents</th>
+                            <th class="py-3 px-4">Sources Interrogées</th>
+                            <th class="py-3 px-5 text-right">Détails de l'Instantané</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-slate-100">
@@ -320,137 +333,138 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-            <div class="w-14 h-14 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto text-2xl mb-4">
-                <i class="ph-bold ph-magnifying-glass"></i>
+        <!-- Empty State View -->
+        <section id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 p-8">
+            <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center mx-auto text-xl mb-3">
+                <i class="ph-bold ph-file-dashed"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-800">Aucun concours correspondant</h3>
-            <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
-                Modifiez vos critères de recherche ou cliquez sur "Actualiser" pour relancer la détection.
+            <h3 class="text-sm font-bold text-slate-900">Aucun concours correspondant</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Modifiez vos termes de recherche ou lancez une actualisation des portails officiels.
             </p>
-            <button onclick="clearSearch()" class="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-                Réinitialiser les filtres
+            <button onclick="clearSearch()" class="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                Réinitialiser la sélection
             </button>
-        </div>
+        </section>
 
     </main>
 
-    <!-- Interactive Job Details Modal -->
-    <div id="jobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs transition-opacity duration-200">
-        <div id="jobModalCard" class="bg-white max-w-2xl w-full rounded-2xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto transform transition-transform duration-200 scale-95">
+    <!-- Administrative Job Dossier Modal -->
+    <div id="jobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-150">
+        <div id="jobModalCard" class="bg-white max-w-2xl w-full rounded-xl border border-slate-300 shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto transform transition-transform duration-150 scale-98">
+            
             <!-- Modal Header -->
-            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
                 <div class="min-w-0">
                     <div class="flex items-center space-x-2 mb-2">
                         <span id="modalSourceBadge"></span>
                         <span id="modalUrgencyBadge"></span>
                     </div>
-                    <h3 id="modalTitle" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug"></h3>
-                    <p id="modalOrganism" class="text-xs sm:text-sm font-semibold text-emerald-700 mt-1 flex items-center">
-                        <i class="ph-bold ph-buildings text-emerald-600 mr-1.5 text-base"></i>
+                    <h3 id="modalTitle" class="text-base sm:text-lg font-bold text-slate-900 leading-snug"></h3>
+                    <p id="modalOrganism" class="text-xs font-bold text-emerald-800 mt-1 flex items-center">
+                        <i class="ph-bold ph-buildings text-emerald-700 mr-1.5"></i>
                         <span id="modalOrganismText"></span>
                     </p>
                 </div>
-                <button onclick="closeModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0">
-                    <i class="ph-bold ph-x text-base"></i>
+                <button onclick="closeModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0" title="Fermer la fiche">
+                    <i class="ph-bold ph-x text-sm"></i>
                 </button>
             </div>
 
-            <!-- Modal Body Details -->
-            <div class="space-y-4 text-xs sm:text-sm">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Date Limite</span>
-                        <span id="modalDeadline" class="font-bold text-slate-900 text-sm mt-0.5 block"></span>
+            <!-- Modal Content Breakdown -->
+            <div class="space-y-3.5 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Date Limite de Dépôt</span>
+                        <span id="modalDeadline" class="font-mono font-bold text-slate-900 text-xs mt-1 block"></span>
                     </div>
-                    <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Grade & Échelle</span>
-                        <span id="modalGrade" class="font-bold text-slate-900 text-sm mt-0.5 block"></span>
+                    <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Grade Administratif</span>
+                        <span id="modalGrade" class="font-bold text-slate-900 text-xs mt-1 block"></span>
                     </div>
                 </div>
 
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Diplômes & Profil Requis</span>
-                    <p id="modalDiplomas" class="text-slate-800 font-medium leading-relaxed"></p>
+                <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Diplômes Homologués Requis</span>
+                    <p id="modalDiplomas" class="text-slate-800 leading-relaxed font-medium"></p>
                 </div>
 
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Spécialités</span>
-                    <p id="modalSpecialties" class="text-emerald-800 font-semibold"></p>
+                <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Spécialité & Filière Technique</span>
+                    <p id="modalSpecialties" class="text-emerald-900 font-semibold"></p>
                 </div>
             </div>
 
-            <!-- Modal Footer Actions -->
-            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <!-- Modal Actions -->
+            <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <button id="modalFavBtn" onclick="toggleModalFav()" 
-                        class="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-amber-500 hover:bg-amber-50 transition active:scale-95 shadow-xs">
-                        <i id="modalFavIcon" class="ph-bold ph-star text-lg"></i>
+                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:text-amber-600 hover:bg-amber-50 transition active:scale-98 shadow-xs" title="Marquer en favori">
+                        <i id="modalFavIcon" class="ph-bold ph-star text-base"></i>
                     </button>
                     <button id="modalStatusBtn" onclick="toggleModalStatus()" 
-                        class="px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition active:scale-95 flex items-center space-x-1.5 shadow-xs">
+                        class="px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition active:scale-98 flex items-center space-x-1.5 shadow-xs">
                         <i id="modalStatusIcon" class="ph-bold ph-check"></i>
                         <span id="modalStatusText">Marquer Postulé</span>
                     </button>
                 </div>
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <button onclick="copyModalLink()" 
-                        class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition shadow-xs flex items-center space-x-1.5">
-                        <i class="ph-bold ph-copy text-base"></i>
+                        class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 active:scale-98 transition shadow-xs flex items-center space-x-1.5">
+                        <i class="ph-bold ph-copy text-sm"></i>
                         <span>Copier Lien</span>
                     </button>
                     <a id="modalOfficialLink" href="#" target="_blank" 
-                        class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2">
-                        <span>Postuler sur le portail</span>
-                        <i class="ph-bold ph-arrow-square-out text-base"></i>
+                        class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 active:scale-98 transition shadow-xs flex items-center justify-center space-x-1.5">
+                        <span>Accéder à l'avis officiel</span>
+                        <i class="ph-bold ph-arrow-up-right text-xs"></i>
                     </a>
                 </div>
             </div>
-    </div>
 
-    <!-- History Details Modal -->
-    <div id="historyDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs transition-opacity duration-200">
-        <div id="historyDetailCard" class="bg-white max-w-3xl w-full rounded-2xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-5 max-h-[88vh] overflow-y-auto transform transition-transform duration-200 scale-95">
-            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                <div>
-                    <div class="flex items-center space-x-2 mb-1.5 flex-wrap gap-y-1">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            <i class="ph-bold ph-calendar text-emerald-600"></i>
-                            <span id="histModalDate"></span>
-                        </span>
-                        <span id="histModalTotalBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700"></span>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900 leading-snug">Offres Détectées lors de cette Veille</h3>
-                    <p id="histModalSources" class="text-xs text-slate-500 mt-0.5"></p>
-                </div>
-                <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0">
-                    <i class="ph-bold ph-x text-base"></i>
-                </button>
-            </div>
-
-            <!-- List of historical jobs -->
-            <div id="histModalJobsList" class="space-y-3">
-                <!-- Dynamically populated -->
-            </div>
-
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>Instantané sauvegardé dans Supabase PostgreSQL</span>
-                </span>
-                <button onclick="closeHistoryModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs">
-                    Fermer
-                </button>
-            </div>
         </div>
     </div>
 
-    <!-- JavaScript Application Core -->
+    <!-- Daily Snapshot Inspection Modal -->
+    <div id="historyDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-150">
+        <div id="historyDetailCard" class="bg-white max-w-3xl w-full rounded-xl border border-slate-300 shadow-2xl p-6 space-y-4 max-h-[88vh] overflow-y-auto transform transition-transform duration-150 scale-98">
+            
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-3.5">
+                <div>
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                            <i class="ph-bold ph-calendar text-slate-600"></i>
+                            <span id="histModalDate"></span>
+                        </span>
+                        <span id="histModalTotalBadge" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono"></span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">Registre des Avis Détectés lors de cette Session</h3>
+                    <p id="histModalSources" class="text-xs text-slate-500 mt-0.5"></p>
+                </div>
+                <button onclick="closeHistoryModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0" title="Fermer l'instantané">
+                    <i class="ph-bold ph-x text-sm"></i>
+                </button>
+            </div>
+
+            <!-- List of Snapshot Jobs -->
+            <div id="histModalJobsList" class="space-y-2.5">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="pt-3.5 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span class="font-mono text-[11px]">Enregistrement persistant dans Supabase Cloud</span>
+                <button onclick="closeHistoryModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-xs">
+                    Fermer le registre
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Application Script Engine -->
     <script>
-        // State variables
         let allJobs = [];
         let historyList = [];
         let currentTab = 'all';
@@ -459,10 +473,9 @@
         let isScrapePolling = false;
 
         // ========================================================
-        // 1. INSTANT INITIALIZATION (Stale-While-Revalidate)
+        // 1. INITIALISATION INSTANTANÉE (Stale-While-Revalidate)
         // ========================================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Read LocalStorage immediately (0ms render)
             const cachedJobs = localStorage.getItem('wadifa_jobs_cache');
             const cachedStats = localStorage.getItem('wadifa_stats_cache');
             
@@ -478,13 +491,12 @@
                 } catch (e) {}
             }
 
-            // In background, fetch fresh data without blocking UI
             fetchJobs();
             setupKeyboardShortcuts();
         });
 
         // ========================================================
-        // 2. DATA FETCHING & SYNC
+        // 2. SYNCHRONISATION DES DONNÉES
         // ========================================================
         async function fetchJobs() {
             try {
@@ -493,7 +505,6 @@
                 
                 allJobs = data.jobs || [];
                 
-                // Save in browser LocalStorage
                 localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
                 localStorage.setItem('wadifa_stats_cache', JSON.stringify(data.stats));
                 localStorage.setItem('wadifa_last_fetch', new Date().toISOString());
@@ -509,7 +520,7 @@
                     startScrapePolling();
                 }
             } catch (err) {
-                console.warn("Mode hors-ligne, utilisation des données locales.", err);
+                console.warn("Réseau indisponible, mode cache local actif.", err);
             }
         }
 
@@ -525,7 +536,7 @@
         }
 
         // ========================================================
-        // 3. STATS CALCULATION & UPDATES
+        // 3. ACTUALISATION DES KPI
         // ========================================================
         function updateStats(stats) {
             if (!stats) {
@@ -545,7 +556,7 @@
         }
 
         // ========================================================
-        // 4. OPTIMISTIC UI: FAVORITES & STATUS (0ms Response)
+        // 4. MISES À JOUR OPTIMISTES (0ms Response)
         // ========================================================
         function toggleFav(jobId, event) {
             if (event) event.stopPropagation();
@@ -553,24 +564,18 @@
             const job = allJobs.find(j => j.id === jobId);
             if (!job) return;
 
-            // 1. Instant local state update (0ms)
             job.is_favorite = !job.is_favorite;
-            
-            // 2. Save in LocalStorage immediately
             localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
             
-            // 3. Update stats & render immediately
             updateStats();
             applyFilters();
 
-            // 4. Toast notification
             showToast(
-                job.is_favorite ? 'Offre ajoutée aux favoris' : 'Offre retirée des favoris',
+                job.is_favorite ? 'Avis ajouté à vos favoris' : 'Avis retiré des favoris',
                 job.is_favorite ? 'emerald' : 'slate',
                 job.is_favorite ? 'ph-star' : 'ph-star'
             );
 
-            // 5. Background API call
             fetch('/api/favorite', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -584,25 +589,19 @@
             const job = allJobs.find(j => j.id === jobId);
             if (!job) return;
 
-            // 1. Instant local toggle
             const newStatus = job.status_applied === 'postule' ? 'a_postuler' : 'postule';
             job.status_applied = newStatus;
 
-            // 2. Save cache immediately
             localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
-
-            // 3. Re-render & update stats immediately
             updateStats();
             applyFilters();
 
-            // 4. Toast
             showToast(
-                newStatus === 'postule' ? 'Statut mis à jour : Candidature déposée' : 'Statut mis à jour : À postuler',
+                newStatus === 'postule' ? 'Dossier marqué comme déposé' : 'Statut réinitialisé : À postuler',
                 newStatus === 'postule' ? 'emerald' : 'slate',
                 newStatus === 'postule' ? 'ph-check-circle' : 'ph-arrow-counter-clockwise'
             );
 
-            // 5. Background API call
             fetch('/api/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -611,7 +610,7 @@
         }
 
         // ========================================================
-        // 5. INSTANT SEARCH & FILTERS
+        // 5. RECHERCHE ET FILTRES RAPIDES
         // ========================================================
         function applyFilters() {
             if (currentTab === 'history') return;
@@ -620,7 +619,6 @@
             const sourceVal = document.getElementById('sourceFilter').value;
             const urgencyVal = document.getElementById('urgencyFilter').value;
 
-            // Toggle clear search button
             const btnClear = document.getElementById('btnClearSearch');
             if (searchVal) {
                 btnClear.classList.remove('hidden');
@@ -629,19 +627,15 @@
             }
 
             const filtered = allJobs.filter(j => {
-                // Tab filter
                 if (currentTab === 'favorites' && !j.is_favorite) return false;
                 if (currentTab === 'applied' && j.status_applied !== 'postule') return false;
 
-                // Source filter
                 if (sourceVal !== 'all' && !j.source.includes(sourceVal)) return false;
 
-                // Urgency filter
                 if (urgencyVal === 'urgent' && j.days_left > 3) return false;
                 if (urgencyVal === 'soon' && (j.days_left <= 3 || j.days_left > 7)) return false;
                 if (urgencyVal === 'safe' && j.days_left <= 7) return false;
 
-                // Keyword text search
                 if (searchVal) {
                     const haystack = `${j.title} ${j.organism} ${j.grade} ${j.diplomas} ${j.specialties}`.toLowerCase();
                     if (!haystack.includes(searchVal)) return false;
@@ -672,7 +666,7 @@
         }
 
         // ========================================================
-        // 6. RENDERING JOBS (CARDS & TABLE)
+        // 6. RENDU DES FICHES DE CONCOURS & TABLEAU
         // ========================================================
         function renderJobs(jobs) {
             const cardsContainer = document.getElementById('cardsView');
@@ -693,66 +687,66 @@
                 const isApplied = j.status_applied === 'postule';
                 const daysBadge = getUrgencyBadge(j.days_left);
                 const sourceBadge = j.source.includes('emploi-public')
-                    ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80"><i class="ph-bold ph-bank text-blue-600"></i>emploi-public.ma</span>'
-                    : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80"><i class="ph-bold ph-globe text-emerald-600"></i>wadifa-info.com</span>';
+                    ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-bank text-slate-500"></i>emploi-public.ma</span>'
+                    : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-globe text-slate-500"></i>wadifa-info.com</span>';
 
                 return `
-                <div onclick="openModal('${j.id}')" 
-                    class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs card-hover flex flex-col justify-between cursor-pointer group relative">
+                <article onclick="openModal('${j.id}')" 
+                    class="admin-card rounded-xl p-4 sm:p-5 flex flex-col justify-between cursor-pointer group">
                     
-                    <!-- Top Card Header -->
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-3">
+                        <!-- Header with Source & Deadlines -->
+                        <div class="flex items-center justify-between gap-2 mb-2.5">
                             <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                                 ${sourceBadge}
                                 ${daysBadge}
                             </div>
-                            <button onclick="toggleFav('${j.id}', event)" title="Favori" 
-                                class="w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isFav ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-500 hover:bg-slate-50'}">
-                                <i class="ph-fill ph-star text-base"></i>
+                            <button onclick="toggleFav('${j.id}', event)" title="Conserver en favori" 
+                                class="w-7 h-7 rounded flex items-center justify-center transition ${isFav ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-500 hover:bg-slate-100'}">
+                                <i class="ph-fill ph-star text-sm"></i>
                             </button>
                         </div>
 
                         <!-- Organism -->
-                        <p class="text-xs font-bold text-emerald-700 tracking-tight line-clamp-1 mb-1">
-                            ${j.organism || 'Fonction Publique'}
-                        </p>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block truncate">
+                            ${j.organism || 'Établissement Public'}
+                        </span>
 
-                        <!-- Title -->
-                        <h3 class="text-sm sm:text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug">
+                        <!-- Job Title -->
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors line-clamp-2 leading-snug mt-1">
                             ${j.title}
                         </h3>
 
-                        <!-- Badges: Diplomas & Specialties -->
-                        <div class="mt-3.5 flex flex-wrap gap-1.5">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200/60">
-                                <i class="ph-bold ph-graduation-cap text-slate-500"></i>
-                                ${j.diplomas ? j.diplomas.substring(0, 36) + '...' : 'Diplôme Spécialisé'}
+                        <!-- Qualification Badges -->
+                        <div class="mt-3 flex flex-wrap gap-1.5">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                <i class="ph-bold ph-graduation-cap text-slate-400"></i>
+                                <span>${j.diplomas ? j.diplomas.substring(0, 36) + '...' : 'Diplôme Spécialisé'}</span>
                             </span>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                                <i class="ph-bold ph-code text-emerald-600"></i>
-                                ${j.specialties ? j.specialties.substring(0, 30) : 'Full Stack'}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-900 border border-emerald-200">
+                                <i class="ph-bold ph-code text-emerald-700"></i>
+                                <span>${j.specialties ? j.specialties.substring(0, 30) : 'Full Stack'}</span>
                             </span>
                         </div>
                     </div>
 
-                    <!-- Bottom Card Footer -->
-                    <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <!-- Status Toggle Button -->
+                    <!-- Footer with Status & Official Link -->
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <!-- Application Status Toggle -->
                         <button onclick="toggleStatus('${j.id}', event)" 
-                            class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${isApplied ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                            <i class="${isApplied ? 'ph-bold ph-check text-emerald-700 mr-1.5' : 'ph-bold ph-circle text-slate-400 mr-1.5'}"></i>
+                            class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold transition ${isApplied ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="${isApplied ? 'ph-bold ph-check text-emerald-700 mr-1' : 'ph-bold ph-circle text-slate-400 mr-1'}"></i>
                             <span>${isApplied ? 'Postulé' : 'À postuler'}</span>
                         </button>
 
-                        <!-- Action Link Button -->
-                        <a href="${j.link}" target="_blank" onclick="event.stopPropagation()" 
-                            class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors">
-                            <span>Voir l'offre</span>
-                            <i class="ph-bold ph-arrow-up-right ml-1"></i>
-                        </a>
+                        <!-- Action View -->
+                        <span class="inline-flex items-center text-xs font-semibold text-slate-600 group-hover:text-emerald-900 transition">
+                            <span>Consulter</span>
+                            <i class="ph-bold ph-arrow-right ml-1 text-xs"></i>
+                        </span>
                     </div>
-                </div>
+
+                </article>
                 `;
             }).join('');
 
@@ -763,36 +757,36 @@
                 const daysBadge = getUrgencyBadge(j.days_left);
 
                 return `
-                <tr onclick="openModal('${j.id}')" class="hover:bg-slate-50/80 cursor-pointer transition">
-                    <td class="py-4 px-5">
+                <tr onclick="openModal('${j.id}')" class="hover:bg-slate-50 cursor-pointer transition">
+                    <td class="py-3 px-4">
                         <p class="font-bold text-slate-900 leading-snug line-clamp-1">${j.title}</p>
-                        <p class="text-xs text-emerald-700 font-semibold mt-0.5">${j.organism}</p>
+                        <p class="text-[11px] text-emerald-900 font-semibold mt-0.5">${j.organism}</p>
                     </td>
-                    <td class="py-4 px-4">
-                        <span class="text-xs text-slate-600 font-medium block">${j.diplomas || 'Technicien'}</span>
-                        <span class="text-[11px] text-emerald-700 font-semibold">${j.specialties || 'Full Stack'}</span>
+                    <td class="py-3 px-4">
+                        <span class="text-xs text-slate-700 font-medium block">${j.diplomas || 'Technicien Spécialisé'}</span>
+                        <span class="text-[11px] text-emerald-800 font-semibold">${j.specialties || 'Full Stack'}</span>
                     </td>
-                    <td class="py-4 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                    <td class="py-3 px-4 text-xs font-mono font-medium text-slate-700 whitespace-nowrap">
                         ${j.deadline_str || j.deadline_date || '-'}
                     </td>
-                    <td class="py-4 px-4 whitespace-nowrap">
+                    <td class="py-3 px-4 whitespace-nowrap">
                         ${daysBadge}
                     </td>
-                    <td class="py-4 px-4 text-xs whitespace-nowrap font-medium text-slate-600">
+                    <td class="py-3 px-4 text-xs whitespace-nowrap font-medium text-slate-600">
                         ${j.source.includes('emploi-public') ? 'emploi-public.ma' : 'wadifa-info.com'}
                     </td>
-                    <td class="py-4 px-4 whitespace-nowrap">
+                    <td class="py-3 px-4 whitespace-nowrap">
                         <button onclick="toggleStatus('${j.id}', event)" 
-                            class="px-2.5 py-1 rounded-lg text-xs font-semibold ${isApplied ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
+                            class="px-2 py-0.5 rounded text-xs font-semibold ${isApplied ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600'}">
                             ${isApplied ? 'Postulé' : 'À postuler'}
                         </button>
                     </td>
-                    <td class="py-4 px-5 text-right whitespace-nowrap space-x-1">
-                        <button onclick="toggleFav('${j.id}', event)" class="p-1.5 rounded-lg ${isFav ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}">
-                            <i class="ph-fill ph-star text-base"></i>
+                    <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                        <button onclick="toggleFav('${j.id}', event)" class="p-1 rounded ${isFav ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}">
+                            <i class="ph-fill ph-star text-sm"></i>
                         </button>
-                        <a href="${j.link}" target="_blank" onclick="event.stopPropagation()" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600">
-                            <i class="ph-bold ph-arrow-square-out text-base"></i>
+                        <a href="${j.link}" target="_blank" onclick="event.stopPropagation()" class="p-1 rounded text-slate-400 hover:text-emerald-800" title="Ouvrir le lien">
+                            <i class="ph-bold ph-arrow-square-out text-sm"></i>
                         </a>
                     </td>
                 </tr>
@@ -802,19 +796,19 @@
 
         function getUrgencyBadge(days) {
             if (days < 0) {
-                return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Expiré</span>';
+                return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Expiré</span>';
             }
             if (days <= 3) {
-                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>${days}j restant${days > 1 ? 's' : ''}</span>`;
+                return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>${days}j restant${days > 1 ? 's' : ''}</span>`;
             }
             if (days <= 7) {
-                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>${days} jours</span>`;
+                return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>${days} jours</span>`;
             }
-            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>${days} jours</span>`;
+            return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>${days} jours</span>`;
         }
 
         // ========================================================
-        // 7. TAB & VIEW SWITCHING (0ms)
+        // 7. COMMUTATION D'ONGLETS ET DE VUES
         // ========================================================
         function setTab(tab) {
             currentTab = tab;
@@ -823,9 +817,9 @@
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (t === tab) {
-                    el.className = 'px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 bg-emerald-50 text-emerald-800 font-bold shadow-xs';
+                    el.className = 'px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 bg-slate-900 text-white font-bold shadow-xs';
                 } else {
-                    el.className = 'px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 hover:bg-slate-100 hover:text-slate-700';
+                    el.className = 'px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-900';
                 }
             });
 
@@ -861,58 +855,57 @@
             const tableView = document.getElementById('tableView');
 
             if (view === 'cards') {
-                btnCards.className = 'p-1.5 rounded-lg text-slate-800 bg-white shadow-xs transition-all';
-                btnTable.className = 'p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-all';
+                btnCards.className = 'px-2 py-1 rounded-md text-xs font-semibold text-slate-900 bg-white shadow-xs transition';
+                btnTable.className = 'px-2 py-1 rounded-md text-xs font-semibold text-slate-500 hover:text-slate-900 transition';
                 cardsView.classList.remove('hidden');
                 tableView.classList.add('hidden');
             } else {
-                btnTable.className = 'p-1.5 rounded-lg text-slate-800 bg-white shadow-xs transition-all';
-                btnCards.className = 'p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-all';
+                btnTable.className = 'px-2 py-1 rounded-md text-xs font-semibold text-slate-900 bg-white shadow-xs transition';
+                btnCards.className = 'px-2 py-1 rounded-md text-xs font-semibold text-slate-500 hover:text-slate-900 transition';
                 tableView.classList.remove('hidden');
                 cardsView.classList.add('hidden');
             }
         }
 
         // ========================================================
-        // 8. HISTORIQUE QUOTIDIEN RENDERING
+        // 8. REGISTRE DE L'HISTORIQUE QUOTIDIEN
         // ========================================================
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody');
             if (!historyList || historyList.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="py-12 text-center text-slate-400">
-                            <i class="ph-bold ph-calendar-blank text-3xl mb-2 block"></i>
-                            Aucun historique enregistré pour l'instant. Cliquez sur "Actualiser".
+                        <td colspan="5" class="py-10 text-center text-slate-400">
+                            <i class="ph-bold ph-calendar-blank text-2xl mb-1 block"></i>
+                            Aucune session de veille archivée pour le moment.
                         </td>
                     </tr>`;
                 return;
             }
 
             tbody.innerHTML = historyList.map(h => `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-4 px-6 font-bold text-slate-900 flex items-center space-x-2">
-                        <i class="ph-bold ph-calendar text-emerald-600 text-base"></i>
-                        <span>${h.run_date}</span>
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="py-3 px-5 font-mono font-bold text-slate-900">
+                        ${h.run_date}
                     </td>
-                    <td class="py-4 px-5">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
-                            ${h.total_jobs} concours
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-slate-100 text-slate-800">
+                            ${h.total_jobs} avis
                         </span>
                     </td>
-                    <td class="py-4 px-5">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${h.urgent_jobs > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-600'}">
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold ${h.urgent_jobs > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-600'}">
                             ${h.urgent_jobs} urgent(s)
                         </span>
                     </td>
-                    <td class="py-4 px-5 text-xs text-slate-600 font-medium">
+                    <td class="py-3 px-4 text-xs text-slate-600">
                         ${h.sources || 'emploi-public.ma + wadifa-info.com'}
                     </td>
-                    <td class="py-4 px-6 text-right">
+                    <td class="py-3 px-5 text-right">
                         <button onclick="openHistoryDetails(${h.id})" 
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all active:scale-95 shadow-xs">
-                            <i class="ph-bold ph-list-magnifying-glass text-base text-emerald-700"></i>
-                            <span>Consulter les offres (${(h.jobs || []).length})</span>
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition active:scale-98">
+                            <i class="ph-bold ph-file-text text-sm"></i>
+                            <span>Ouvrir l'instantané (${(h.jobs || []).length})</span>
                         </button>
                     </td>
                 </tr>
@@ -920,7 +913,7 @@
         }
 
         // ========================================================
-        // 9. INTERACTIVE JOB DETAILS MODAL
+        // 9. MODALES ADMINISTRATIVES (FICHE & INSTANTANÉ)
         // ========================================================
         function openModal(jobId) {
             const job = allJobs.find(j => j.id === jobId);
@@ -935,26 +928,21 @@
             document.getElementById('modalDiplomas').innerText = job.diplomas || 'Diplôme de Technicien Spécialisé (DUT, BTS, EST, ISTA) en informatique / digital.';
             document.getElementById('modalSpecialties').innerText = job.specialties || 'Développement Digital / Web Full Stack';
 
-            // Source badge
             document.getElementById('modalSourceBadge').innerHTML = job.source.includes('emploi-public')
-                ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80"><i class="ph-bold ph-bank text-blue-600"></i>emploi-public.ma</span>'
-                : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80"><i class="ph-bold ph-globe text-emerald-600"></i>wadifa-info.com</span>';
+                ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-bank"></i>emploi-public.ma</span>'
+                : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-globe"></i>wadifa-info.com</span>';
 
             document.getElementById('modalUrgencyBadge').innerHTML = getUrgencyBadge(job.days_left);
-
-            // Official Link
             document.getElementById('modalOfficialLink').href = job.link;
 
-            // Fav icon state
             updateModalFavState();
             updateModalStatusState();
 
-            // Open modal animation
             const modal = document.getElementById('jobModal');
             const card = document.getElementById('jobModalCard');
             modal.classList.remove('hidden');
             setTimeout(() => {
-                card.classList.remove('scale-95');
+                card.classList.remove('scale-98');
                 card.classList.add('scale-100');
             }, 10);
         }
@@ -963,11 +951,11 @@
             const modal = document.getElementById('jobModal');
             const card = document.getElementById('jobModalCard');
             card.classList.remove('scale-100');
-            card.classList.add('scale-95');
+            card.classList.add('scale-98');
             setTimeout(() => {
                 modal.classList.add('hidden');
                 activeModalJob = null;
-            }, 150);
+            }, 100);
         }
 
         function updateModalFavState() {
@@ -975,11 +963,11 @@
             const icon = document.getElementById('modalFavIcon');
             const btn = document.getElementById('modalFavBtn');
             if (activeModalJob.is_favorite) {
-                icon.className = 'ph-fill ph-star text-amber-500 text-lg';
-                btn.className = 'p-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-600 transition active:scale-95 shadow-xs';
+                icon.className = 'ph-fill ph-star text-amber-500 text-base';
+                btn.className = 'p-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 transition shadow-xs';
             } else {
-                icon.className = 'ph-bold ph-star text-slate-400 text-lg';
-                btn.className = 'p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-amber-500 hover:bg-amber-50 transition active:scale-95 shadow-xs';
+                icon.className = 'ph-bold ph-star text-slate-400 text-base';
+                btn.className = 'p-2 rounded-lg border border-slate-200 text-slate-600 hover:text-amber-600 hover:bg-amber-50 transition shadow-xs';
             }
         }
 
@@ -996,11 +984,11 @@
             const icon = document.getElementById('modalStatusIcon');
             const isApplied = activeModalJob.status_applied === 'postule';
             if (isApplied) {
-                btn.className = 'px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-emerald-200 bg-emerald-100 text-emerald-800 transition active:scale-95 flex items-center space-x-1.5 shadow-xs';
+                btn.className = 'px-3 py-2 rounded-lg text-xs font-semibold border border-emerald-200 bg-emerald-100 text-emerald-800 transition flex items-center space-x-1.5 shadow-xs';
                 text.innerText = 'Candidature Déposée';
                 icon.className = 'ph-bold ph-check text-emerald-700';
             } else {
-                btn.className = 'px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition active:scale-95 flex items-center space-x-1.5 shadow-xs';
+                btn.className = 'px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition flex items-center space-x-1.5 shadow-xs';
                 text.innerText = 'Marquer Postulé';
                 icon.className = 'ph-bold ph-circle text-slate-400';
             }
@@ -1018,7 +1006,6 @@
             showToast('Lien officiel copié dans le presse-papier', 'emerald', 'ph-copy');
         }
 
-        // Close on backdrop click
         document.getElementById('jobModal').addEventListener('click', (e) => {
             if (e.target.id === 'jobModal') closeModal();
         });
@@ -1031,43 +1018,43 @@
             const item = historyList.find(h => h.id === historyId);
             if (!item) return;
 
-            document.getElementById('histModalDate').innerText = `Veille du ${item.run_date} (${item.created_at || ''})`;
-            document.getElementById('histModalTotalBadge').innerText = `${(item.jobs || []).length} offre(s) enregistrée(s)`;
-            document.getElementById('histModalSources').innerText = `Sources interrogées : ${item.sources || 'emploi-public.ma + wadifa-info.com'}`;
+            document.getElementById('histModalDate').innerText = `Session du ${item.run_date} (${item.created_at || ''})`;
+            document.getElementById('histModalTotalBadge').innerText = `${(item.jobs || []).length} avis répertoriés`;
+            document.getElementById('histModalSources').innerText = `Sources : ${item.sources || 'emploi-public.ma + wadifa-info.com'}`;
 
             const container = document.getElementById('histModalJobsList');
             if (!item.jobs || item.jobs.length === 0) {
                 container.innerHTML = `
-                    <div class="py-12 text-center text-slate-400">
-                        <i class="ph-bold ph-folder-open text-3xl mb-2 block"></i>
-                        Aucun concours enregistré dans cet instantané.
+                    <div class="py-8 text-center text-slate-400">
+                        <i class="ph-bold ph-folder-open text-2xl mb-1 block"></i>
+                        Aucun concours archivé dans cet instantané.
                     </div>
                 `;
             } else {
                 container.innerHTML = item.jobs.map((j) => {
                     const daysBadge = getUrgencyBadge(j.days_left);
                     const sourceBadge = (j.source && j.source.includes('emploi-public'))
-                        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80"><i class="ph-bold ph-bank"></i>emploi-public.ma</span>'
-                        : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80"><i class="ph-bold ph-globe"></i>wadifa-info.com</span>';
+                        ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-bank"></i>emploi-public.ma</span>'
+                        : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-globe"></i>wadifa-info.com</span>';
 
                     return `
-                    <div class="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all space-y-2">
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-1.5">
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <div class="flex items-center space-x-2">
+                            <div class="flex items-center space-x-1.5">
                                 ${sourceBadge}
                                 ${daysBadge}
                             </div>
-                            <span class="text-xs text-slate-500 font-medium">Limite : <strong class="text-slate-800">${j.deadline_str || j.deadline_date || '-'}</strong></span>
+                            <span class="text-xs text-slate-500 font-mono">Date limite : <strong class="text-slate-800">${j.deadline_str || j.deadline_date || '-'}</strong></span>
                         </div>
                         <div>
-                            <p class="text-xs font-bold text-emerald-700">${j.organism || 'Organisme Public'}</p>
-                            <h4 class="text-sm font-bold text-slate-900 leading-snug mt-0.5">${j.title}</h4>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block">${j.organism || 'Organisme Public'}</span>
+                            <h4 class="text-xs sm:text-sm font-bold text-slate-900 leading-snug mt-0.5">${j.title}</h4>
                         </div>
                         <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                            <span class="text-slate-600 truncate max-w-md">${j.diplomas || 'Technicien Spécialisé'} &middot; <strong class="text-emerald-800">${j.specialties || 'Full Stack'}</strong></span>
-                            <a href="${j.link}" target="_blank" class="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline flex-shrink-0">
-                                <span>Consulter l'offre</span>
-                                <i class="ph-bold ph-arrow-up-right"></i>
+                            <span class="text-slate-600 truncate max-w-md">${j.diplomas || 'Technicien Spécialisé'} &middot; <strong class="text-emerald-900">${j.specialties || 'Full Stack'}</strong></span>
+                            <a href="${j.link}" target="_blank" class="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:text-emerald-900 hover:underline flex-shrink-0">
+                                <span>Voir l'avis</span>
+                                <i class="ph-bold ph-arrow-up-right text-xs"></i>
                             </a>
                         </div>
                     </div>
@@ -1079,7 +1066,7 @@
             const card = document.getElementById('historyDetailCard');
             modal.classList.remove('hidden');
             setTimeout(() => {
-                card.classList.remove('scale-95');
+                card.classList.remove('scale-98');
                 card.classList.add('scale-100');
             }, 10);
         }
@@ -1088,14 +1075,14 @@
             const modal = document.getElementById('historyDetailModal');
             const card = document.getElementById('historyDetailCard');
             card.classList.remove('scale-100');
-            card.classList.add('scale-95');
+            card.classList.add('scale-98');
             setTimeout(() => {
                 modal.classList.add('hidden');
-            }, 150);
+            }, 100);
         }
 
         // ========================================================
-        // 10. BACKGROUND REFRESH & SCRAPE WITH POLLING
+        // 10. RECHERCHE EN ARRIÈRE-PLAN
         // ========================================================
         async function triggerScrape() {
             const btn = document.getElementById('btnScrape');
@@ -1105,16 +1092,16 @@
             btn.disabled = true;
             btn.classList.add('opacity-75', 'cursor-not-allowed');
             icon.classList.add('animate-spin');
-            text.innerText = 'Recherche en cours...';
+            text.innerText = 'Veille active...';
 
-            showToast('Recherche des nouveaux concours en cours...', 'brand', 'ph-arrows-clockwise');
+            showToast('Interrogation des portails en direct...', 'slate', 'ph-arrows-clockwise');
 
             try {
                 const res = await fetch('/api/scrape', { method: 'POST' });
                 const data = await res.json();
                 startScrapePolling();
             } catch (err) {
-                showToast('Erreur lors du lancement de la veille', 'rose', 'ph-warning-circle');
+                showToast('Échec de la communication avec le serveur', 'rose', 'ph-warning-circle');
                 resetScrapeButton();
             }
         }
@@ -1132,7 +1119,7 @@
                         isScrapePolling = false;
                         resetScrapeButton();
                         await fetchJobs();
-                        showToast('Veille terminée : Données actualisées avec succès', 'emerald', 'ph-check-circle');
+                        showToast('Veille achevée : Registre synchronisé', 'emerald', 'ph-check-circle');
                     }
                 } catch (e) {
                     clearInterval(interval);
@@ -1153,66 +1140,56 @@
             text.innerText = 'Actualiser';
         }
 
-        // ========================================================
-        // 11. EXCEL EXPORT
-        // ========================================================
         function downloadExcel() {
-            showToast('Téléchargement du fichier Excel en cours...', 'emerald', 'ph-download-simple');
+            showToast('Génération du fichier Excel en cours...', 'emerald', 'ph-file-xls');
             window.location.href = '/api/export/excel';
         }
 
         // ========================================================
-        // 12. TOAST NOTIFICATION ENGINE (Clean Vector Icons, Zero Emojis)
+        // 11. NOTIFICATIONS TOAST MINIMALISTES
         // ========================================================
         function showToast(message, type = 'emerald', iconName = 'ph-check') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
 
-            let bgClass = 'bg-slate-900 text-white border-slate-700/80';
+            let borderClass = 'border-slate-700';
             let iconColor = 'text-slate-300';
 
             if (type === 'emerald') {
-                bgClass = 'bg-slate-900 text-white border-emerald-500/40';
+                borderClass = 'border-emerald-600/60';
                 iconColor = 'text-emerald-400';
             } else if (type === 'rose') {
-                bgClass = 'bg-slate-900 text-white border-rose-500/40';
+                borderClass = 'border-rose-600/60';
                 iconColor = 'text-rose-400';
-            } else if (type === 'brand') {
-                bgClass = 'bg-slate-900 text-white border-slate-700/80';
-                iconColor = 'text-emerald-400';
             }
 
-            toast.className = `${bgClass} backdrop-blur-md px-4 py-3 rounded-xl text-xs sm:text-sm font-semibold shadow-xl border flex items-center space-x-2.5 pointer-events-auto transform translate-y-3 opacity-0 transition-all duration-200`;
+            toast.className = `bg-slate-900 text-white ${borderClass} px-3.5 py-2.5 rounded-lg text-xs font-semibold shadow-lg border flex items-center space-x-2 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-150`;
             toast.innerHTML = `
-                <i class="ph-bold ${iconName} ${iconColor} text-base flex-shrink-0"></i>
+                <i class="ph-bold ${iconName} ${iconColor} text-sm flex-shrink-0"></i>
                 <span class="leading-tight">${message}</span>
             `;
 
             container.appendChild(toast);
 
-            // Animate in
             setTimeout(() => {
-                toast.classList.remove('translate-y-3', 'opacity-0');
+                toast.classList.remove('translate-y-2', 'opacity-0');
             }, 10);
 
-            // Animate out & remove
             setTimeout(() => {
-                toast.classList.add('translate-y-3', 'opacity-0');
-                setTimeout(() => toast.remove(), 250);
-            }, 3000);
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 150);
+            }, 2600);
         }
 
         // ========================================================
-        // 13. KEYBOARD SHORTCUTS
+        // 12. RACCOURCIS CLAVIER
         // ========================================================
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', (e) => {
-                // Focus search on '/'
                 if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
                     e.preventDefault();
                     document.getElementById('searchInput').focus();
                 }
-                // Close modal on Escape
                 if (e.key === 'Escape') {
                     const histModal = document.getElementById('historyDetailModal');
                     if (activeModalJob) {
@@ -1223,7 +1200,6 @@
                         clearSearch();
                     }
                 }
-                // Quick switch tabs 1, 2, 3, 4
                 if (document.activeElement.tagName !== 'INPUT') {
                     if (e.key === '1') setTab('all');
                     if (e.key === '2') setTab('favorites');
