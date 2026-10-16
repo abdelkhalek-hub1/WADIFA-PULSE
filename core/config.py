@@ -2,16 +2,23 @@ import os
 from datetime import date
 from dotenv import load_dotenv
 
-# Charger les variables d'environnement depuis le fichier .env si présent
-load_dotenv()
+# Résolution absolue du répertoire racine du projet
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Charger les variables d'environnement depuis le fichier .env à la racine
+env_path = os.path.join(BASE_DIR, ".env")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
 
 # ==========================================
-# 1. إعدادات البروفايل (Profil de recherche)
+# 1. Profil de recherche (Target Profile)
 # ==========================================
 PROFILE_NAME = "Développement Digital Web Full Stack"
 
 SEARCH_KEYWORDS = [
-    # العربية
+    # Arabe
     "معلوميات",
     "تطوير",
     "رقمي",
@@ -22,7 +29,7 @@ SEARCH_KEYWORDS = [
     "الأنظمة والشبكات",
     "مطور",
     "تقني من الدرجة الثالثة",
-    # الفرنسية
+    # Français
     "informatique",
     "developpement",
     "developpement digital",
@@ -54,10 +61,10 @@ TARGET_DIPLOMAS = [
 ]
 
 # ==========================================
-# 2. إعدادات الإشعارات (Notifications)
+# 2. Canaux de Notification (Alerts)
 # ==========================================
 
-# أ) البريد الإلكتروني (Gmail SMTP)
+# Gmail SMTP
 EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "true").lower() == "true"
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
@@ -65,39 +72,35 @@ EMAIL_SENDER = os.getenv("EMAIL_SENDER", "")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
 EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "")
 
-# ب) تيليغرام (Telegram Bot - البديل الأسهل والأسرع 100% مجاني ومباشر)
+# Telegram Bot
 TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-# ج) واتساب (CallMeBot)
+# WhatsApp (CallMeBot)
 WHATSAPP_ENABLED = os.getenv("WHATSAPP_ENABLED", "false").lower() == "true"
 WHATSAPP_PHONE = os.getenv("WHATSAPP_PHONE", "")
 WHATSAPP_API_KEY = os.getenv("WHATSAPP_API_KEY", "")
 
 # ==========================================
-# 3. إعدادات Google Sheets
+# 3. Synchronisation Google Sheets
 # ==========================================
 GOOGLE_SHEETS_ENABLED = os.getenv("GOOGLE_SHEETS_ENABLED", "false").lower() == "true"
-
-# الطريقة الأسهل بدون Google Cloud: عبر Google Apps Script Webhook
 GOOGLE_SHEET_WEBHOOK_URL = os.getenv("GOOGLE_SHEET_WEBHOOK_URL", "")
 
-# الطريقة التقليدية (Service Account):
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "")
 SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "")
-GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service_account.json")
+GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", os.path.join(BASE_DIR, "service_account.json"))
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GCP_SA_KEY", "")
 
 # ==========================================
-# 4. قاعدة البيانات (Database Configuration)
+# 4. Base de Données (PostgreSQL / Supabase)
 # ==========================================
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 # ==========================================
-# 5. مسارات الملفات المحلية (Local Output)
+# 5. Fichiers et Chemins Locaux
 # ==========================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HISTORY_FILE = os.path.join(BASE_DIR, "seen_jobs.json")
 EXCEL_OUTPUT = os.path.join(BASE_DIR, "concours_actifs.xlsx")
 HTML_OUTPUT = os.path.join(BASE_DIR, "concours_actifs.html")

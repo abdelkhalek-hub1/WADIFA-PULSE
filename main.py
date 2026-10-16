@@ -1,10 +1,18 @@
 import json
 import os
 from datetime import date
-import config
-from scraper import fetch_all_jobs
-from sheets_manager import sync_all_storage
-from notifier import send_whatsapp_message, send_email_notification, send_telegram_message
+
+from core import (
+    config,
+    fetch_all_jobs,
+    sync_all_storage,
+    send_whatsapp_message,
+    send_email_notification,
+    send_telegram_message,
+    get_all_jobs,
+    save_jobs,
+    record_daily_history,
+)
 
 def load_history() -> dict:
     """Charge l'historique des concours déjà notifiés pour éviter les doublons."""
@@ -27,21 +35,19 @@ def save_history(seen_ids: list[str]):
 
 def main():
     print("=" * 65)
-    print("🚀 Démarrage du système autonome de veille emploi public Maroc...")
-    print(f"🎯 Profil ciblé : {config.PROFILE_NAME}")
+    print("Moteur de surveillance autonome de l'emploi public au Maroc")
+    print(f"Profil ciblé : {config.PROFILE_NAME}")
     print("=" * 65)
 
     # 1. Scraping et filtrage des concours valides
     jobs = fetch_all_jobs()
 
     if not jobs:
-        print("ℹ️ Aucun concours actif correspondant trouvé pour le moment.")
+        print("[INFO] Aucun concours actif correspondant trouvé pour le moment.")
         sync_all_storage([])
         return
 
     # 2. Vérification des nouvelles offres vs base de données & historique local
-    from database import get_all_jobs, save_jobs, record_daily_history
-
     history = load_history()
     seen_ids = set(history.get("seen_ids", []))
     try:
@@ -65,15 +71,15 @@ def main():
         sources="emploi-public.ma + wadifa-info.com",
         jobs_snapshot=jobs
     )
-    print(f"\nTotal concours actifs : {len(jobs)} | Nouveaux concours : {len(new_jobs)} | Historique quotidien mis à jour")
+    print(f"\nStatistiques : {len(jobs)} concours actifs | {len(new_jobs)} nouveaux | Historique quotidien mis à jour")
 
     # 3. Synchronisation Google Sheets, Excel et Dashboard HTML
-    print("\n💾 Synchronisation des fichiers et Google Sheets...")
+    print("\nSynchronisation des fichiers et Google Sheets...")
     sheet_url = sync_all_storage(jobs)
 
     # 4. Envoi des notifications (Telegram, Email, WhatsApp)
     if new_jobs or not seen_ids:
-        print("\n📬 Envoi des notifications en cours...")
+        print("\nDiffusion des notifications d'alerte en cours...")
         
         # Telegram
         send_telegram_message(jobs, sheet_url)
@@ -85,13 +91,13 @@ def main():
         # Email
         send_email_notification(jobs, sheet_url)
     else:
-        print("\nℹ️ Pas de nouveaux concours aujourd'hui, les tableaux ont été mis à jour.")
+        print("\n[INFO] Aucun nouveau concours aujourd'hui, les données ont été synchronisées.")
 
     # 5. Mise à jour de l'historique
     all_current_ids = [j["id"] for j in jobs]
     save_history(list(seen_ids.union(all_current_ids)))
 
-    print("\n✅ Opération terminée avec succès !")
+    print("\n[SUCCES] Pipeline de veille et synchronisation achevé avec succès.")
     print("=" * 65)
 
 if __name__ == "__main__":

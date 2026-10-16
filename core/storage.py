@@ -3,7 +3,7 @@ import json
 import csv
 import urllib.request
 from datetime import date
-import config
+from . import config
 
 def export_to_html(jobs: list[dict], output_path: str = config.HTML_OUTPUT):
     """Génère un tableau de bord HTML interactif et moderne en français."""

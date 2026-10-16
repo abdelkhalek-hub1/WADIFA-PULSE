@@ -10,7 +10,7 @@ import html
 import re
 import os
 from datetime import date
-import config
+from . import config
 
 def safe_url(url: str) -> str:
     """Encode proprement les caractères arabes ou spéciaux dans l'URL pour Telegram."""

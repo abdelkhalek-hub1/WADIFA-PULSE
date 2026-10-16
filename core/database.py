@@ -4,7 +4,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
-import config
+from . import config
 
 # Paramètres de connexion PostgreSQL / Supabase
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()

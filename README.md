@@ -54,11 +54,12 @@ flowchart TD
         WI["wadifa-info.com\n(Flux RSS & Annonces)"]
     end
 
-    subgraph Core ["Moteur de Traitement (Python)"]
-        SC["scraper.py\n(Parsing, Filtrage Délais & Tech)"]
-        DB["database.py\n(Connection Pool, SQLite & PostgreSQL)"]
-        SM["sheets_manager.py\n(Google Sheets Webhook & Excel)"]
-        NT["notifier.py\n(Telegram Bot & Gmail SMTP)"]
+    subgraph Core ["Module Central (core/)"]
+        SC["core/scraper.py\n(Parsing, Filtrage & Délais)"]
+        DB["core/database.py\n(Pool PostgreSQL Supabase & SQLite)"]
+        ST["core/storage.py\n(Google Sheets Webhook & Excel)"]
+        NT["core/notifier.py\n(Telegram Bot & Gmail SMTP)"]
+        CF["core/config.py\n(Profils, Mots-clés & Environnement)"]
     end
 
     subgraph Storage ["Persistance des Données"]
@@ -67,8 +68,12 @@ flowchart TD
         HIST[("daily_history\nInstantanés Quotidiens")]
     end
 
+    subgraph Entrypoints ["Points d'Entrée"]
+        FLASK["app.py (Serveur Web Flask / WSGI)"]
+        CLI["main.py (Pipeline CLI & Cron)"]
+    end
+
     subgraph UI ["Interface Utilisateur"]
-        FLASK["app.py (Flask Web Server)"]
         DASH["Dashboard Web Interactif\n(0ms Optimistic UI, LocalStorage)"]
         MODAL["Fiches Détaillées des Concours"]
     end
@@ -79,10 +84,11 @@ flowchart TD
     DB --> PG
     DB --> SQL
     DB --> HIST
-    SC --> SM
+    SC --> ST
     SC --> NT
     FLASK --> DASH
     DASH --> MODAL
+    CLI --> SC
     PG -.-> FLASK
     SQL -.-> FLASK
 ```
@@ -124,24 +130,28 @@ flowchart TD
 ## Structure du Projet
 
 ```text
-offre d'emploi/
+wadifa-pulse/
+├── core/                           # Package central (Architecture modulaire)
+│   ├── __init__.py                 # Interface d'export du package
+│   ├── config.py                   # Configuration centralisée & validation
+│   ├── database.py                 # Couche données (PostgreSQL 17 + SQLite)
+│   ├── scraper.py                  # Moteur d'extraction (emploi-public.ma & wadifa-info)
+│   ├── notifier.py                 # Modules d'alerte (Telegram, Gmail, WhatsApp)
+│   └── storage.py                  # Synchronisation Google Sheets & Excel
+├── templates/                      # Vues HTML (Jinja2)
+│   ├── index.html                  # Tableau de bord administratif interactif
+│   └── login.html                  # Portail d'authentification sécurisé
 ├── .github/
 │   └── workflows/
-│       └── daily_concours.yml     # Automatisation cron GitHub Actions (08:00 UTC)
-├── templates/
-│   ├── index.html                 # Tableau de bord principal Bento (HTML5 + Tailwind)
-│   └── login.html                 # Page d'authentification sécurisée
-├── app.py                         # Serveur d'application web Flask & API REST
-├── config.py                      # Définition du profil cible et mots-clés de filtrage
-├── database.py                    # Couche d'accès aux données (Supabase & SQLite)
-├── scraper.py                     # Moteur d'extraction et normalisation des concours
-├── sheets_manager.py              # Export Excel, HTML et Webhook Google Sheets
-├── notifier.py                    # Dispatcher de notifications Telegram et Gmail
-├── main.py                        # Orchestrateur CLI pour exécution cron
-├── requirements.txt               # Dépendances Python
-├── Lancer_Application.bat         # Lanceur Windows en 1 clic
-├── .env.example                   # Gabarit des variables d'environnement
-└── README.md                      # Documentation du projet
+│       └── daily_concours.yml      # Cron CI/CD quotidien GitHub Actions
+├── app.py                          # Serveur d'application Web Flask & API REST
+├── main.py                         # Point d'entrée CLI & Cron de veille
+├── requirements.txt                # Dépendances Python de production
+├── Procfile                        # Configuration déploiement Cloud (Render/Railway)
+├── Lancer_Application.bat          # Lanceur Windows en 1 clic
+├── .env.example                    # Gabarit des variables d'environnement
+├── .gitignore                      # Règles d'exclusion Git strictes
+└── README.md                       # Documentation d'architecture complète
 ```
 
 ---

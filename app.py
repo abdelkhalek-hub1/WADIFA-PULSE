@@ -4,15 +4,23 @@ import threading
 from functools import wraps
 from datetime import date
 from flask import Flask, render_template, jsonify, request, send_file, redirect, url_for, session
-import config
-from scraper import fetch_all_jobs
-from database import (
-    init_db, save_jobs, get_all_jobs, toggle_favorite, update_status,
-    get_stats, authenticate_user, record_daily_history, get_daily_history,
-    calculate_stats
+from core import (
+    config,
+    init_db,
+    save_jobs,
+    get_all_jobs,
+    toggle_favorite,
+    update_status,
+    get_stats,
+    authenticate_user,
+    record_daily_history,
+    get_daily_history,
+    calculate_stats,
+    fetch_all_jobs,
+    sync_all_storage,
+    send_telegram_message,
+    send_email_notification,
 )
-from sheets_manager import sync_all_storage
-from notifier import send_telegram_message, send_email_notification
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "wadifa-secret-super-key-2026-xyz-morocco")
