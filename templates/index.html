@@ -1,250 +1,483 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WadifaBot — Veille Concours Fonction Publique</title>
+    <title>WadifaBot Maroc — Veille Concours Publics Full Stack</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Modern Font: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .badge-urgent { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-        .badge-soon { background-color: #fef9c3; color: #a16207; border: 1px solid #fde047; }
-        .badge-safe { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-        .tab-active { border-bottom: 2px solid #16a34a; color: #16a34a; font-weight: 600; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .card-hover {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+        }
+        .badge-pulse {
+            animation: pulse-badge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="h-full bg-slate-50 text-slate-800 flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
 
-    <!-- Top Navigation -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white text-xl shadow-md shadow-emerald-200">
-                    <i class="ph-bold ph-briefcase"></i>
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Sticky Navigation Header -->
+    <header class="glass-header border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Brand / Logo -->
+            <div class="flex items-center space-x-3.5 min-w-0">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-xl shadow-md shadow-emerald-500/20 flex-shrink-0">
+                    <i class="ph-fill ph-briefcase"></i>
                 </div>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-900 leading-tight">WadifaBot Maroc</h1>
-                    <p class="text-xs text-slate-500">Veille autonome pour : <span id="profileName" class="font-semibold text-emerald-700">Développement Web Full Stack</span></p>
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">WadifaBot Maroc</h1>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            v2.0 Pro
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 truncate mt-0.5">
+                        Cible : <span id="profileName" class="font-bold text-emerald-700">Développement Web Full Stack</span>
+                    </p>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-3">
-                <button id="btnExportExcel" onclick="downloadExcel()" class="inline-flex items-center px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
-                    <i class="ph-bold ph-microsoft-excel-logo mr-1.5 text-emerald-600"></i>
-                    Export Excel
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                <!-- Export Excel -->
+                <button onclick="downloadExcel()" title="Exporter en fichier Excel" 
+                    class="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-xs">
+                    <i class="ph-bold ph-microsoft-excel-logo text-emerald-600 mr-1.5 text-sm"></i>
+                    <span class="hidden sm:inline">Export Excel</span>
                 </button>
-                <button id="btnScrape" onclick="triggerScrape()" class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md shadow-emerald-200">
-                    <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise mr-1.5 text-sm"></i>
+
+                <!-- Scrape / Refresh -->
+                <button id="btnScrape" onclick="triggerScrape()" title="Vérifier les nouveaux concours en direct"
+                    class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 transition-all shadow-md shadow-emerald-500/20">
+                    <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise text-sm mr-1.5 transition-transform duration-500"></i>
                     <span id="scrapeText">Actualiser</span>
                 </button>
 
-                <!-- User & Logout -->
-                <div class="h-6 w-px bg-slate-200 mx-1"></div>
+                <!-- Divider -->
+                <div class="h-6 w-px bg-slate-200"></div>
+
+                <!-- User Profile & Logout -->
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs" title="{{ user.email }}">
+                    <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-extrabold text-xs shadow-xs" title="{{ user.email }}">
                         {{ user.name[0] if user.name else 'A' }}
                     </div>
-                    <a href="/logout" title="Se déconnecter" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition text-base">
-                        <i class="ph-bold ph-sign-out"></i>
+                    <a href="/logout" title="Se déconnecter" 
+                        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-all">
+                        <i class="ph-bold ph-sign-out text-lg"></i>
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Stats Bar -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <!-- Top Bento KPI Statistics -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <!-- 1. Total Concours -->
+            <div onclick="setTab('all')" 
+                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 card-hover cursor-pointer flex items-center justify-between group">
                 <div>
-                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Concours Actifs</p>
-                    <p id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Concours Actifs</span>
+                    <span id="statTotal" class="text-2xl sm:text-3xl font-black text-slate-900 mt-0.5 block">--</span>
+                    <span class="text-[11px] text-slate-500 font-medium">Spécialité Full Stack</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
-                    <i class="ph-bold ph-list-dashes"></i>
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <i class="ph-bold ph-briefcase"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+            <!-- 2. Urgents (<= 3j) -->
+            <div onclick="setUrgencyFilter('urgent')" 
+                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-rose-300 card-hover cursor-pointer flex items-center justify-between group">
                 <div>
-                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Urgents (≤ 3j)</p>
-                    <p id="statUrgent" class="text-2xl font-bold text-rose-600 mt-1">0</p>
+                    <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider block">🚨 Urgents (≤ 3j)</span>
+                    <span id="statUrgent" class="text-2xl sm:text-3xl font-black text-rose-600 mt-0.5 block">--</span>
+                    <span class="text-[11px] text-rose-500/80 font-medium">Délai imminent</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl">
+                <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     <i class="ph-bold ph-alarm"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+            <!-- 3. Favoris -->
+            <div onclick="setTab('favorites')" 
+                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-300 card-hover cursor-pointer flex items-center justify-between group">
                 <div>
-                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Mes Favoris</p>
-                    <p id="statFavorites" class="text-2xl font-bold text-amber-500 mt-1">0</p>
+                    <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">⭐ Mes Favoris</span>
+                    <span id="statFavorites" class="text-2xl sm:text-3xl font-black text-amber-600 mt-0.5 block">--</span>
+                    <span class="text-[11px] text-slate-500 font-medium">Offres sauvegardées</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl">
-                    <i class="ph-bold ph-star"></i>
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <i class="ph-fill ph-star"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+            <!-- 4. Postulés -->
+            <div onclick="setTab('applied')" 
+                class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-emerald-300 card-hover cursor-pointer flex items-center justify-between group">
                 <div>
-                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dossiers Postulés</p>
-                    <p id="statApplied" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+                    <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">✅ Candidatures</span>
+                    <span id="statApplied" class="text-2xl sm:text-3xl font-black text-emerald-600 mt-0.5 block">--</span>
+                    <span class="text-[11px] text-slate-500 font-medium">Dossiers déposés</span>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     <i class="ph-bold ph-check-circle"></i>
                 </div>
             </div>
         </div>
 
-        <!-- Controls: Tabs, Filters & Search -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
-                <!-- Tabs -->
-                <div class="flex space-x-6 text-sm font-medium text-slate-500">
-                    <button onclick="setTab('all')" id="tab-all" class="pb-2.5 tab-active transition flex items-center space-x-1.5">
+        <!-- Filter & Control Panel -->
+        <div class="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+            <!-- Tabs & View Switcher Row -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <!-- Tab Buttons -->
+                <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto pb-1 sm:pb-0 text-xs sm:text-sm font-bold text-slate-500">
+                    <button onclick="setTab('all')" id="tab-all" 
+                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 font-extrabold shadow-xs">
+                        <i class="ph-bold ph-squares-four text-base"></i>
                         <span>Tous les concours</span>
                     </button>
-                    <button onclick="setTab('favorites')" id="tab-favorites" class="pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5">
+                    <button onclick="setTab('favorites')" id="tab-favorites" 
+                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-700">
+                        <i class="ph-fill ph-star text-amber-500 text-base"></i>
                         <span>Favoris</span>
-                        <span id="countFav" class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+                        <span id="countFav" class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">0</span>
                     </button>
-                    <button onclick="setTab('applied')" id="tab-applied" class="pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5">
+                    <button onclick="setTab('applied')" id="tab-applied" 
+                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-700">
+                        <i class="ph-bold ph-check-circle text-emerald-600 text-base"></i>
                         <span>Postulés</span>
-                        <span id="countApplied" class="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+                        <span id="countApplied" class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">0</span>
                     </button>
-                    <button onclick="setTab('history')" id="tab-history" class="pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5">
-                        <i class="ph-bold ph-clock-counter-clockwise"></i>
+                    <button onclick="setTab('history')" id="tab-history" 
+                        class="px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-700">
+                        <i class="ph-bold ph-clock-counter-clockwise text-base"></i>
                         <span>Historique quotidien</span>
                     </button>
                 </div>
 
-                <!-- View Switcher -->
-                <div id="viewSwitcher" class="flex items-center space-x-2">
-                    <span class="text-xs text-slate-400">Vue :</span>
-                    <button onclick="setView('cards')" id="btnViewCards" class="p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100">
-                        <i class="ph-bold ph-squares-four text-base"></i>
+                <!-- View Switcher (Cards vs Table) -->
+                <div id="viewControls" class="flex items-center space-x-1.5 self-end sm:self-auto bg-slate-100 p-1 rounded-xl">
+                    <button onclick="setView('cards')" id="btnViewCards" title="Vue Cartes" 
+                        class="p-1.5 rounded-lg text-slate-800 bg-white shadow-xs transition-all">
+                        <i class="ph-bold ph-grid-four text-base"></i>
                     </button>
-                    <button onclick="setView('table')" id="btnViewTable" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700">
+                    <button onclick="setView('table')" id="btnViewTable" title="Vue Tableau" 
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-all">
                         <i class="ph-bold ph-table text-base"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Search and Filter Inputs (Caché si onglet Historique) -->
-            <div id="filterBar" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div class="sm:col-span-5 relative">
-                    <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-base"></i>
-                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Rechercher par ministère, poste, mot-clé..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition bg-slate-50/50">
+            <!-- Instant Search & Filter Chips (Visible for Jobs tabs) -->
+            <div id="filterSection" class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+                    <!-- Search Input with Clear Button -->
+                    <div class="md:col-span-6 relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                            <i class="ph-bold ph-magnifying-glass text-base"></i>
+                        </div>
+                        <input type="text" id="searchInput" oninput="applyFilters()" 
+                            placeholder="Rechercher par organisme, ministère, spécialité... (Touche /)" 
+                            class="w-full pl-10 pr-9 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                        <button id="btnClearSearch" onclick="clearSearch()" 
+                            class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <i class="ph-bold ph-x-circle text-base"></i>
+                        </button>
+                    </div>
+
+                    <!-- Source Filter Pills -->
+                    <div class="md:col-span-3">
+                        <select id="sourceFilter" onchange="applyFilters()" 
+                            class="w-full px-3 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                            <option value="all">Toutes les sources</option>
+                            <option value="emploi-public.ma">🏛️ emploi-public.ma (Officiel)</option>
+                            <option value="wadifa-info.com">🌐 wadifa-info.com</option>
+                        </select>
+                    </div>
+
+                    <!-- Urgency Filter Pills -->
+                    <div class="md:col-span-3">
+                        <select id="urgencyFilter" onchange="applyFilters()" 
+                            class="w-full px-3 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                            <option value="all">Tous les délais</option>
+                            <option value="urgent">🚨 Urgents (≤ 3 jours)</option>
+                            <option value="soon">⏳ Bientôt (≤ 7 jours)</option>
+                            <option value="safe">🟢 Valides (> 7 jours)</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="sm:col-span-3">
-                    <select id="sourceFilter" onchange="applyFilters()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50">
-                        <option value="all">Toutes les sources</option>
-                        <option value="emploi-public.ma">emploi-public.ma (Officiel)</option>
-                        <option value="wadifa-info.com">wadifa-info.com</option>
-                    </select>
-                </div>
-
-                <div class="sm:col-span-4">
-                    <select id="urgencyFilter" onchange="applyFilters()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50">
-                        <option value="all">Tous les délais</option>
-                        <option value="urgent">🚨 Urgents (≤ 3 jours)</option>
-                        <option value="soon">⏳ Bientôt (≤ 7 jours)</option>
-                        <option value="safe">🟢 Valides (> 7 jours)</option>
-                    </select>
+                <!-- Quick Filter Tags -->
+                <div class="flex items-center space-x-2 text-xs overflow-x-auto pb-1 text-slate-500">
+                    <span class="font-bold text-slate-400 mr-1 flex-shrink-0">Filtres rapides :</span>
+                    <button onclick="quickFilter('')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Tous</button>
+                    <button onclick="quickFilter('Full Stack')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Full Stack</button>
+                    <button onclick="quickFilter('Développement')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Développement Digital</button>
+                    <button onclick="quickFilter('Technicien')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all flex-shrink-0">Technicien 3ème grade</button>
                 </div>
             </div>
         </div>
 
-        <!-- Section 1 : Jobs Cards View -->
-        <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-
-        <!-- Section 2 : Jobs Table View -->
-        <div id="tableView" class="hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                        <tr>
-                            <th class="py-3.5 px-4">Organisme</th>
-                            <th class="py-3.5 px-4">Poste & Grade</th>
-                            <th class="py-3.5 px-4">Diplôme & Spécialité</th>
-                            <th class="py-3.5 px-4">Date limite</th>
-                            <th class="py-3.5 px-4">Délai</th>
-                            <th class="py-3.5 px-4">Source</th>
-                            <th class="py-3.5 px-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
+        <!-- Section 1 : Cards View (Responsive Grid) -->
+        <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Dynamically populated or rendered from LocalStorage -->
         </div>
 
-        <!-- Section 3 : Historique Quotidien (Daily History View) -->
-        <div id="historyView" class="hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                    <h3 class="font-bold text-slate-900 text-base">Historique des Veilles Quotidiennes</h3>
-                    <p class="text-xs text-slate-500">Enregistré dans la base Supabase PostgreSQL</p>
-                </div>
-                <span class="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-full border border-emerald-200">Cloud Sync Actif</span>
-            </div>
+        <!-- Section 2 : Table View -->
+        <div id="tableView" class="hidden bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                    <thead class="bg-slate-50/80 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200">
                         <tr>
-                            <th class="py-3.5 px-5">Date d'Exécution</th>
-                            <th class="py-3.5 px-5">Total Détecté</th>
-                            <th class="py-3.5 px-5">Concours Urgents</th>
-                            <th class="py-3.5 px-5">Sources Interrogées</th>
-                            <th class="py-3.5 px-5">Statut</th>
+                            <th class="py-4 px-5">Organisme & Poste</th>
+                            <th class="py-4 px-4">Diplômes & Spécialités</th>
+                            <th class="py-4 px-4">Date Limite</th>
+                            <th class="py-4 px-4">Délai</th>
+                            <th class="py-4 px-4">Source</th>
+                            <th class="py-4 px-4">Statut</th>
+                            <th class="py-4 px-5 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                    <tbody id="tableBody" class="divide-y divide-slate-100">
                         <!-- Populated by JS -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200/80">
-            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto text-3xl mb-3">
-                <i class="ph-bold ph-tray"></i>
+        <!-- Section 3 : Historique Quotidien View -->
+        <div id="historyView" class="hidden bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">Historique des Veilles Quotidiennes</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Enregistrement automatique synchronisé avec Supabase PostgreSQL</p>
+                </div>
+                <div class="inline-flex items-center space-x-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Synchronisation Cloud Active</span>
+                </div>
             </div>
-            <h3 class="text-base font-semibold text-slate-800">Aucun résultat trouvé</h3>
-            <p class="text-sm text-slate-500 mt-1">Modifiez vos filtres ou lancez une nouvelle actualisation.</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="py-4 px-6">Date de veille</th>
+                            <th class="py-4 px-5">Total détecté</th>
+                            <th class="py-4 px-5">Concours Urgents</th>
+                            <th class="py-4 px-5">Sources interrogées</th>
+                            <th class="py-4 px-6 text-right">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300 p-8">
+            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-3xl flex items-center justify-center mx-auto text-3xl mb-4">
+                <i class="ph-bold ph-magnifying-glass"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Aucun concours correspondant</h3>
+            <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                Modifiez vos critères de recherche ou cliquez sur "Actualiser" pour relancer la détection.
+            </p>
+            <button onclick="clearSearch()" class="mt-4 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                Réinitialiser les filtres
+            </button>
         </div>
 
     </main>
 
-    <!-- JavaScript Application Logic -->
+    <!-- Interactive Job Details Modal -->
+    <div id="jobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-200">
+        <div id="jobModalCard" class="bg-white max-w-2xl w-full rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto transform transition-transform duration-200 scale-95">
+            <!-- Modal Header -->
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span id="modalSourceBadge"></span>
+                        <span id="modalUrgencyBadge"></span>
+                    </div>
+                    <h3 id="modalTitle" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug"></h3>
+                    <p id="modalOrganism" class="text-xs sm:text-sm font-semibold text-emerald-700 mt-1"></p>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0">
+                    <i class="ph-bold ph-x text-base"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Details -->
+            <div class="space-y-4 text-xs sm:text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Date Limite</span>
+                        <span id="modalDeadline" class="font-bold text-slate-900 text-sm mt-0.5 block"></span>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Grade & Échelle</span>
+                        <span id="modalGrade" class="font-bold text-slate-900 text-sm mt-0.5 block"></span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Diplômes & Profil Requis</span>
+                    <p id="modalDiplomas" class="text-slate-800 font-medium leading-relaxed"></p>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Spécialités</span>
+                    <p id="modalSpecialties" class="text-emerald-800 font-semibold"></p>
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button id="modalFavBtn" onclick="toggleModalFav()" 
+                        class="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-amber-500 hover:bg-amber-50 transition active:scale-95 shadow-xs">
+                        <i id="modalFavIcon" class="ph-bold ph-star text-lg"></i>
+                    </button>
+                    <button id="modalStatusBtn" onclick="toggleModalStatus()" 
+                        class="px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 bg-white hover:bg-slate-50 transition active:scale-95 flex items-center space-x-1.5 shadow-xs">
+                        <i id="modalStatusIcon" class="ph-bold ph-check"></i>
+                        <span id="modalStatusText">Marquer Postulé</span>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button onclick="copyModalLink()" 
+                        class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition shadow-xs flex items-center space-x-1.5">
+                        <i class="ph-bold ph-copy text-base"></i>
+                        <span>Copier Lien</span>
+                    </button>
+                    <a id="modalOfficialLink" href="#" target="_blank" 
+                        class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 transition shadow-md shadow-emerald-500/20 flex items-center justify-center space-x-2">
+                        <span>Postuler sur le portail</span>
+                        <i class="ph-bold ph-arrow-square-out text-base"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Core -->
     <script>
+        // State variables
         let allJobs = [];
         let historyList = [];
         let currentTab = 'all';
         let currentView = 'cards';
+        let activeModalJob = null;
+        let isScrapePolling = false;
 
+        // ========================================================
+        // 1. INSTANT INITIALIZATION (Stale-While-Revalidate)
+        // ========================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Read LocalStorage immediately (0ms render)
+            const cachedJobs = localStorage.getItem('wadifa_jobs_cache');
+            const cachedStats = localStorage.getItem('wadifa_stats_cache');
+            
+            if (cachedJobs) {
+                try {
+                    allJobs = JSON.parse(cachedJobs);
+                    renderJobs(allJobs);
+                } catch (e) {}
+            }
+            if (cachedStats) {
+                try {
+                    updateStats(JSON.parse(cachedStats));
+                } catch (e) {}
+            }
+
+            // In background, fetch fresh data without blocking UI
+            fetchJobs();
+            setupKeyboardShortcuts();
+        });
+
+        // ========================================================
+        // 2. DATA FETCHING & SYNC
+        // ========================================================
         async function fetchJobs() {
             try {
                 const res = await fetch('/api/jobs');
                 const data = await res.json();
+                
                 allJobs = data.jobs || [];
                 
+                // Save in browser LocalStorage
                 localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+                localStorage.setItem('wadifa_stats_cache', JSON.stringify(data.stats));
                 localStorage.setItem('wadifa_last_fetch', new Date().toISOString());
+
+                if (data.profile) {
+                    document.getElementById('profileName').innerText = data.profile;
+                }
 
                 updateStats(data.stats);
                 applyFilters();
-            } catch (err) {
-                console.warn("Chargement depuis LocalStorage...", err);
-                const cached = localStorage.getItem('wadifa_jobs_cache');
-                if (cached) {
-                    allJobs = JSON.parse(cached);
-                    applyFilters();
+
+                if (data.is_scraping && !isScrapePolling) {
+                    startScrapePolling();
                 }
+            } catch (err) {
+                console.warn("Mode hors-ligne, utilisation des données locales.", err);
             }
         }
 
@@ -255,61 +488,129 @@
                 historyList = data.history || [];
                 renderHistory();
             } catch (err) {
-                console.error("Erreur historique", err);
+                console.error("Erreur historique :", err);
             }
         }
 
-        function renderHistory() {
-            const tbody = document.getElementById('historyTableBody');
-            if (historyList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400">Aucun historique enregistré pour le moment. Lancez votre premier scraping.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = historyList.map(h => `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-3.5 px-5 font-bold text-slate-900 flex items-center space-x-2">
-                        <i class="ph-bold ph-calendar text-emerald-600"></i>
-                        <span>${h.run_date}</span>
-                    </td>
-                    <td class="py-3.5 px-5"><span class="bg-blue-50 text-blue-700 font-bold px-2.5 py-1 rounded-md text-xs">${h.total_jobs} concours</span></td>
-                    <td class="py-3.5 px-5"><span class="bg-rose-50 text-rose-700 font-bold px-2.5 py-1 rounded-md text-xs">${h.urgent_jobs} urgent(s)</span></td>
-                    <td class="py-3.5 px-5 text-xs text-slate-600 font-medium">${h.sources || 'emploi-public + wadifa-info'}</td>
-                    <td class="py-3.5 px-5"><span class="inline-flex items-center text-xs font-semibold text-emerald-700"><i class="ph-bold ph-check mr-1 text-emerald-600"></i> Succès</span></td>
-                </tr>
-            `).join('');
-        }
-
+        // ========================================================
+        // 3. STATS CALCULATION & UPDATES
+        // ========================================================
         function updateStats(stats) {
-            if (!stats) return;
-            document.getElementById('statTotal').innerText = stats.total || allJobs.length;
-            document.getElementById('statUrgent').innerText = stats.urgent || 0;
-            document.getElementById('statFavorites').innerText = stats.favorites || 0;
-            document.getElementById('statApplied').innerText = stats.applied || 0;
-            document.getElementById('countFav').innerText = stats.favorites || 0;
-            document.getElementById('countApplied').innerText = stats.applied || 0;
+            if (!stats) {
+                stats = {
+                    total: allJobs.filter(j => j.days_left >= 0).length,
+                    urgent: allJobs.filter(j => j.days_left >= 0 && j.days_left <= 3).length,
+                    favorites: allJobs.filter(j => j.is_favorite).length,
+                    applied: allJobs.filter(j => j.status_applied === 'postule').length
+                };
+            }
+            document.getElementById('statTotal').innerText = stats.total ?? allJobs.length;
+            document.getElementById('statUrgent').innerText = stats.urgent ?? 0;
+            document.getElementById('statFavorites').innerText = stats.favorites ?? 0;
+            document.getElementById('statApplied').innerText = stats.applied ?? 0;
+            document.getElementById('countFav').innerText = stats.favorites ?? 0;
+            document.getElementById('countApplied').innerText = stats.applied ?? 0;
         }
 
+        // ========================================================
+        // 4. OPTIMISTIC UI: FAVORITES & STATUS (0ms Response)
+        // ========================================================
+        function toggleFav(jobId, event) {
+            if (event) event.stopPropagation();
+
+            const job = allJobs.find(j => j.id === jobId);
+            if (!job) return;
+
+            // 1. Instant local state update (0ms)
+            job.is_favorite = !job.is_favorite;
+            
+            // 2. Save in LocalStorage immediately
+            localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+            
+            // 3. Update stats & render immediately
+            updateStats();
+            applyFilters();
+
+            // 4. Toast notification
+            showToast(
+                job.is_favorite ? '⭐ Ajouté à vos favoris' : 'Offre retirée des favoris',
+                job.is_favorite ? 'emerald' : 'slate'
+            );
+
+            // 5. Background API call
+            fetch('/api/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: jobId })
+            }).catch(err => console.error("Erreur sync favori", err));
+        }
+
+        function toggleStatus(jobId, event) {
+            if (event) event.stopPropagation();
+
+            const job = allJobs.find(j => j.id === jobId);
+            if (!job) return;
+
+            // 1. Instant local toggle
+            const newStatus = job.status_applied === 'postule' ? 'a_postuler' : 'postule';
+            job.status_applied = newStatus;
+
+            // 2. Save cache immediately
+            localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+
+            // 3. Re-render & update stats immediately
+            updateStats();
+            applyFilters();
+
+            // 4. Toast
+            showToast(
+                newStatus === 'postule' ? '✅ Statut mis à jour : Candidature déposée' : '📌 Statut réinitialisé : À postuler',
+                newStatus === 'postule' ? 'emerald' : 'slate'
+            );
+
+            // 5. Background API call
+            fetch('/api/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: jobId, status: newStatus })
+            }).catch(err => console.error("Erreur sync statut", err));
+        }
+
+        // ========================================================
+        // 5. INSTANT SEARCH & FILTERS
+        // ========================================================
         function applyFilters() {
             if (currentTab === 'history') return;
 
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
-            const source = document.getElementById('sourceFilter').value;
-            const urgency = document.getElementById('urgencyFilter').value;
+            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+            const sourceVal = document.getElementById('sourceFilter').value;
+            const urgencyVal = document.getElementById('urgencyFilter').value;
+
+            // Toggle clear search button
+            const btnClear = document.getElementById('btnClearSearch');
+            if (searchVal) {
+                btnClear.classList.remove('hidden');
+            } else {
+                btnClear.classList.add('hidden');
+            }
 
             const filtered = allJobs.filter(j => {
+                // Tab filter
                 if (currentTab === 'favorites' && !j.is_favorite) return false;
                 if (currentTab === 'applied' && j.status_applied !== 'postule') return false;
 
-                if (source !== 'all' && !j.source.includes(source)) return false;
+                // Source filter
+                if (sourceVal !== 'all' && !j.source.includes(sourceVal)) return false;
 
-                if (urgency === 'urgent' && j.days_left > 3) return false;
-                if (urgency === 'soon' && (j.days_left <= 3 || j.days_left > 7)) return false;
-                if (urgency === 'safe' && j.days_left <= 7) return false;
+                // Urgency filter
+                if (urgencyVal === 'urgent' && j.days_left > 3) return false;
+                if (urgencyVal === 'soon' && (j.days_left <= 3 || j.days_left > 7)) return false;
+                if (urgencyVal === 'safe' && j.days_left <= 7) return false;
 
-                if (query) {
-                    const text = `${j.title} ${j.organism} ${j.grade} ${j.diplomas} ${j.specialties}`.toLowerCase();
-                    if (!text.includes(query)) return false;
+                // Keyword text search
+                if (searchVal) {
+                    const haystack = `${j.title} ${j.organism} ${j.grade} ${j.diplomas} ${j.specialties}`.toLowerCase();
+                    if (!haystack.includes(searchVal)) return false;
                 }
 
                 return true;
@@ -318,12 +619,33 @@
             renderJobs(filtered);
         }
 
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sourceFilter').value = 'all';
+            document.getElementById('urgencyFilter').value = 'all';
+            applyFilters();
+        }
+
+        function quickFilter(query) {
+            document.getElementById('searchInput').value = query;
+            applyFilters();
+        }
+
+        function setUrgencyFilter(level) {
+            setTab('all');
+            document.getElementById('urgencyFilter').value = level;
+            applyFilters();
+        }
+
+        // ========================================================
+        // 6. RENDERING JOBS (CARDS & TABLE)
+        // ========================================================
         function renderJobs(jobs) {
             const cardsContainer = document.getElementById('cardsView');
             const tableBody = document.getElementById('tableBody');
             const emptyState = document.getElementById('emptyState');
 
-            if (jobs.length === 0) {
+            if (!jobs || jobs.length === 0) {
                 cardsContainer.innerHTML = '';
                 tableBody.innerHTML = '';
                 emptyState.classList.remove('hidden');
@@ -331,223 +653,460 @@
             }
             emptyState.classList.add('hidden');
 
+            // Render Cards View
             cardsContainer.innerHTML = jobs.map(j => {
-                const daysBadge = getDaysBadge(j.days_left);
-                const sourceBadge = j.source.includes('emploi-public') 
-                    ? '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-blue-200">emploi-public.ma</span>'
-                    : '<span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-emerald-200">wadifa-info.com</span>';
-
-                const favColor = j.is_favorite ? 'text-amber-500 fill-amber-500' : 'text-slate-300 hover:text-amber-400';
+                const isFav = j.is_favorite;
                 const isApplied = j.status_applied === 'postule';
+                const daysBadge = getUrgencyBadge(j.days_left);
+                const sourceBadge = j.source.includes('emploi-public')
+                    ? '<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">🏛️ emploi-public.ma</span>'
+                    : '<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">🌐 wadifa-info.com</span>';
 
                 return `
-                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                <div onclick="openModal('${j.id}')" 
+                    class="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs card-hover flex flex-col justify-between cursor-pointer group relative overflow-hidden">
+                    
+                    <!-- Top Card Header -->
                     <div>
                         <div class="flex items-center justify-between gap-2 mb-3">
-                            ${sourceBadge}
-                            <button onclick="toggleFav('${j.id}')" class="text-xl p-1 transition ${favColor}">
-                                <i class="ph-fill ph-star"></i>
+                            <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                                ${sourceBadge}
+                                ${daysBadge}
+                            </div>
+                            <button onclick="toggleFav('${j.id}', event)" title="Favori" 
+                                class="w-8 h-8 rounded-xl flex items-center justify-center transition-all ${isFav ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400 hover:bg-slate-50'}">
+                                <i class="ph-fill ph-star text-lg"></i>
                             </button>
                         </div>
-                        <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2">${j.grade}</h3>
-                        <p class="text-xs font-medium text-slate-500 mt-1 flex items-center">
-                            <i class="ph-bold ph-buildings mr-1 text-slate-400"></i> ${j.organism}
+
+                        <!-- Organism -->
+                        <p class="text-xs font-bold text-emerald-700 tracking-tight line-clamp-1 mb-1">
+                            ${j.organism || 'Fonction Publique'}
                         </p>
 
-                        <div class="mt-4 space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div><span class="font-semibold text-slate-700">Diplôme :</span> ${j.diplomas}</div>
-                            <div><span class="font-semibold text-slate-700">Spécialité :</span> <span class="text-blue-700 font-medium">${j.specialties}</span></div>
+                        <!-- Title -->
+                        <h3 class="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug">
+                            ${j.title}
+                        </h3>
+
+                        <!-- Badges: Diplomas & Specialties -->
+                        <div class="mt-3 flex flex-wrap gap-1.5">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700">
+                                🎓 ${j.diplomas ? j.diplomas.substring(0, 38) + '...' : 'Diplôme Spécialisé'}
+                            </span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-800">
+                                💻 ${j.specialties ? j.specialties.substring(0, 32) : 'Full Stack'}
+                            </span>
                         </div>
                     </div>
 
-                    <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                        <div>
-                            <p class="text-[11px] text-slate-400 uppercase tracking-wide">Délai limite</p>
-                            <div class="flex items-center space-x-2 mt-0.5">
-                                <span class="text-xs font-bold text-slate-800">${j.deadline_str}</span>
-                                ${daysBadge}
-                            </div>
-                        </div>
+                    <!-- Bottom Card Footer -->
+                    <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <!-- Status Toggle Button -->
+                        <button onclick="toggleStatus('${j.id}', event)" 
+                            class="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${isApplied ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="${isApplied ? 'ph-bold ph-check mr-1 text-emerald-700' : 'ph-bold ph-paper-plane-tilt mr-1 text-slate-400'}"></i>
+                            <span>${isApplied ? 'Postulé' : 'À postuler'}</span>
+                        </button>
 
-                        <div class="flex items-center space-x-2">
-                            <button onclick="toggleApplied('${j.id}', '${isApplied ? 'a_postuler' : 'postule'}')" title="${isApplied ? 'Marqué comme postulé' : 'Marquer comme postulé'}" class="p-2 rounded-lg border text-sm font-medium transition ${isApplied ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                                <i class="ph-bold ph-check"></i>
-                            </button>
-                            <a href="${j.link}" target="_blank" class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition">
-                                Postuler <i class="ph-bold ph-arrow-up-right ml-1"></i>
-                            </a>
-                        </div>
+                        <!-- Action Link Button -->
+                        <a href="${j.link}" target="_blank" onclick="event.stopPropagation()" 
+                            class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-extrabold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition-colors">
+                            <span>Voir l'offre</span>
+                            <i class="ph-bold ph-arrow-up-right ml-1"></i>
+                        </a>
                     </div>
                 </div>
                 `;
             }).join('');
 
+            // Render Table View
             tableBody.innerHTML = jobs.map(j => {
-                const daysBadge = getDaysBadge(j.days_left);
-                const sourceBadge = j.source.includes('emploi-public') ? 'emploi-public.ma' : 'wadifa-info.com';
-                const favColor = j.is_favorite ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400';
+                const isFav = j.is_favorite;
+                const isApplied = j.status_applied === 'postule';
+                const daysBadge = getUrgencyBadge(j.days_left);
 
                 return `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-3 px-4 font-semibold text-slate-900">${j.organism}</td>
-                    <td class="py-3 px-4 font-medium">${j.grade}</td>
-                    <td class="py-3 px-4 text-xs text-slate-600">${j.diplomas} <br><span class="text-blue-600 font-medium">${j.specialties}</span></td>
-                    <td class="py-3 px-4 font-semibold text-slate-800">${j.deadline_str}</td>
-                    <td class="py-3 px-4">${daysBadge}</td>
-                    <td class="py-3 px-4 text-xs font-semibold text-slate-500">${sourceBadge}</td>
-                    <td class="py-3 px-4 text-right space-x-2">
-                        <button onclick="toggleFav('${j.id}')" class="text-lg ${favColor}"><i class="ph-fill ph-star"></i></button>
-                        <a href="${j.link}" target="_blank" class="inline-block px-3 py-1 rounded bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">Détails</a>
+                <tr onclick="openModal('${j.id}')" class="hover:bg-slate-50/80 cursor-pointer transition">
+                    <td class="py-4 px-5">
+                        <p class="font-extrabold text-slate-900 leading-snug line-clamp-1">${j.title}</p>
+                        <p class="text-xs text-emerald-700 font-semibold mt-0.5">${j.organism}</p>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="text-xs text-slate-600 font-medium block">${j.diplomas || 'Technicien'}</span>
+                        <span class="text-[11px] text-emerald-700 font-bold">${j.specialties || 'Full Stack'}</span>
+                    </td>
+                    <td class="py-4 px-4 text-xs font-bold text-slate-700 whitespace-nowrap">
+                        ${j.deadline_str || j.deadline_date || '-'}
+                    </td>
+                    <td class="py-4 px-4 whitespace-nowrap">
+                        ${daysBadge}
+                    </td>
+                    <td class="py-4 px-4 text-xs whitespace-nowrap font-medium text-slate-600">
+                        ${j.source.includes('emploi-public') ? '🏛️ emploi-public' : '🌐 wadifa-info'}
+                    </td>
+                    <td class="py-4 px-4 whitespace-nowrap">
+                        <button onclick="toggleStatus('${j.id}', event)" 
+                            class="px-2.5 py-1 rounded-lg text-xs font-bold ${isApplied ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
+                            ${isApplied ? '✅ Postulé' : 'À postuler'}
+                        </button>
+                    </td>
+                    <td class="py-4 px-5 text-right whitespace-nowrap space-x-1">
+                        <button onclick="toggleFav('${j.id}', event)" class="p-1.5 rounded-lg ${isFav ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400'}">
+                            <i class="ph-fill ph-star text-base"></i>
+                        </button>
+                        <a href="${j.link}" target="_blank" onclick="event.stopPropagation()" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600">
+                            <i class="ph-bold ph-arrow-square-out text-base"></i>
+                        </a>
                     </td>
                 </tr>
                 `;
             }).join('');
         }
 
-        function getDaysBadge(days) {
-            if (days <= 3) return `<span class="badge-urgent text-xs px-2 py-0.5 rounded-full font-bold">🚨 ${days} j</span>`;
-            if (days <= 7) return `<span class="badge-soon text-xs px-2 py-0.5 rounded-full font-bold">⏳ ${days} j</span>`;
-            return `<span class="badge-safe text-xs px-2 py-0.5 rounded-full font-bold">🟢 ${days} j</span>`;
+        function getUrgencyBadge(days) {
+            if (days < 0) {
+                return '<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500">Expiré</span>';
+            }
+            if (days <= 3) {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 badge-pulse">🚨 ${days}j restant${days > 1 ? 's' : ''}</span>`;
+            }
+            if (days <= 7) {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">⏳ ${days} jours</span>`;
+            }
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">🟢 ${days} jours</span>`;
         }
 
+        // ========================================================
+        // 7. TAB & VIEW SWITCHING (0ms)
+        // ========================================================
         function setTab(tab) {
             currentTab = tab;
-            ['all', 'favorites', 'applied', 'history'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                if (btn) {
-                    if (t === tab) {
-                        btn.className = 'pb-2.5 tab-active transition flex items-center space-x-1.5';
-                    } else {
-                        btn.className = 'pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5 text-slate-500';
-                    }
+
+            const tabs = ['all', 'favorites', 'applied', 'history'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    el.className = 'px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 font-extrabold shadow-xs';
+                } else {
+                    el.className = 'px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 hover:bg-slate-100 hover:text-slate-700';
                 }
             });
 
-            const filterBar = document.getElementById('filterBar');
-            const viewSwitcher = document.getElementById('viewSwitcher');
+            const filterSec = document.getElementById('filterSection');
+            const viewCtrl = document.getElementById('viewControls');
             const cardsView = document.getElementById('cardsView');
             const tableView = document.getElementById('tableView');
             const historyView = document.getElementById('historyView');
             const emptyState = document.getElementById('emptyState');
 
             if (tab === 'history') {
-                filterBar.classList.add('hidden');
-                viewSwitcher.classList.add('hidden');
+                filterSec.classList.add('hidden');
+                viewCtrl.classList.add('hidden');
                 cardsView.classList.add('hidden');
                 tableView.classList.add('hidden');
                 emptyState.classList.add('hidden');
                 historyView.classList.remove('hidden');
                 fetchHistory();
             } else {
-                filterBar.classList.remove('hidden');
-                viewSwitcher.classList.remove('hidden');
+                filterSec.classList.remove('hidden');
+                viewCtrl.classList.remove('hidden');
                 historyView.classList.add('hidden');
-                if (currentView === 'cards') {
-                    cardsView.classList.remove('hidden');
-                    tableView.classList.add('hidden');
-                } else {
-                    cardsView.classList.add('hidden');
-                    tableView.classList.remove('hidden');
-                }
+                setView(currentView);
                 applyFilters();
             }
         }
 
         function setView(view) {
             currentView = view;
-            const cards = document.getElementById('cardsView');
-            const table = document.getElementById('tableView');
             const btnCards = document.getElementById('btnViewCards');
             const btnTable = document.getElementById('btnViewTable');
+            const cardsView = document.getElementById('cardsView');
+            const tableView = document.getElementById('tableView');
 
             if (view === 'cards') {
-                cards.classList.remove('hidden');
-                table.classList.add('hidden');
-                btnCards.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100';
-                btnTable.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700';
+                btnCards.className = 'p-1.5 rounded-lg text-slate-800 bg-white shadow-xs transition-all';
+                btnTable.className = 'p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-all';
+                cardsView.classList.remove('hidden');
+                tableView.classList.add('hidden');
             } else {
-                cards.classList.add('hidden');
-                table.classList.remove('hidden');
-                btnTable.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100';
-                btnCards.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700';
+                btnTable.className = 'p-1.5 rounded-lg text-slate-800 bg-white shadow-xs transition-all';
+                btnCards.className = 'p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-all';
+                tableView.classList.remove('hidden');
+                cardsView.classList.add('hidden');
             }
         }
 
-        async function toggleFav(jobId) {
-            const res = await fetch('/api/favorite', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: jobId})
-            });
-            const data = await res.json();
-            if (data.success) {
-                const job = allJobs.find(j => j.id === jobId);
-                if (job) job.is_favorite = data.is_favorite ? 1 : 0;
-                localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
-                applyFilters();
-                const favCount = allJobs.filter(j => j.is_favorite).length;
-                document.getElementById('statFavorites').innerText = favCount;
-                document.getElementById('countFav').innerText = favCount;
+        // ========================================================
+        // 8. HISTORIQUE QUOTIDIEN RENDERING
+        // ========================================================
+        function renderHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            if (!historyList || historyList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-slate-400">
+                            <i class="ph-bold ph-calendar-blank text-3xl mb-2 block"></i>
+                            Aucun historique enregistré pour l'instant. Cliquez sur "Actualiser".
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = historyList.map(h => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-4 px-6 font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="ph-bold ph-calendar text-emerald-600 text-base"></i>
+                        <span>${h.run_date}</span>
+                    </td>
+                    <td class="py-4 px-5">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700">
+                            ${h.total_jobs} concours
+                        </span>
+                    </td>
+                    <td class="py-4 px-5">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${h.urgent_jobs > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                            ${h.urgent_jobs} urgent(s)
+                        </span>
+                    </td>
+                    <td class="py-4 px-5 text-xs text-slate-600 font-medium">
+                        ${h.sources || 'emploi-public + wadifa-info'}
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <span class="inline-flex items-center text-xs font-bold text-emerald-700">
+                            <i class="ph-bold ph-check-circle mr-1 text-emerald-600"></i> Succès
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ========================================================
+        // 9. INTERACTIVE JOB DETAILS MODAL
+        // ========================================================
+        function openModal(jobId) {
+            const job = allJobs.find(j => j.id === jobId);
+            if (!job) return;
+
+            activeModalJob = job;
+
+            document.getElementById('modalTitle').innerText = job.title;
+            document.getElementById('modalOrganism').innerText = `🏛️ ${job.organism || 'Organisme Public'}`;
+            document.getElementById('modalDeadline').innerText = `${job.deadline_str || job.deadline_date || 'Non spécifiée'} (${job.days_left >= 0 ? job.days_left + ' jours restants' : 'Délai dépassé'})`;
+            document.getElementById('modalGrade').innerText = job.grade || 'Technicien de 3ème grade';
+            document.getElementById('modalDiplomas').innerText = job.diplomas || 'Diplôme de Technicien Spécialisé (DUT, BTS, EST, ISTA) en informatique / digital.';
+            document.getElementById('modalSpecialties').innerText = job.specialties || 'Développement Digital / Web Full Stack';
+
+            // Source badge
+            document.getElementById('modalSourceBadge').innerHTML = job.source.includes('emploi-public')
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">🏛️ emploi-public.ma</span>'
+                : '<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">🌐 wadifa-info.com</span>';
+
+            document.getElementById('modalUrgencyBadge').innerHTML = getUrgencyBadge(job.days_left);
+
+            // Official Link
+            document.getElementById('modalOfficialLink').href = job.link;
+
+            // Fav icon state
+            updateModalFavState();
+            updateModalStatusState();
+
+            // Open modal animation
+            const modal = document.getElementById('jobModal');
+            const card = document.getElementById('jobModalCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('jobModal');
+            const card = document.getElementById('jobModalCard');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                activeModalJob = null;
+            }, 150);
+        }
+
+        function updateModalFavState() {
+            if (!activeModalJob) return;
+            const icon = document.getElementById('modalFavIcon');
+            const btn = document.getElementById('modalFavBtn');
+            if (activeModalJob.is_favorite) {
+                icon.className = 'ph-fill ph-star text-amber-500 text-lg';
+                btn.className = 'p-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-600 transition active:scale-95 shadow-xs';
+            } else {
+                icon.className = 'ph-bold ph-star text-slate-400 text-lg';
+                btn.className = 'p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-amber-500 hover:bg-amber-50 transition active:scale-95 shadow-xs';
             }
         }
 
-        async function toggleApplied(jobId, newStatus) {
-            const res = await fetch('/api/status', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: jobId, status: newStatus})
-            });
-            const data = await res.json();
-            if (data.success) {
-                const job = allJobs.find(j => j.id === jobId);
-                if (job) job.status_applied = newStatus;
-                localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
-                applyFilters();
-                const appliedCount = allJobs.filter(j => j.status_applied === 'postule').length;
-                document.getElementById('statApplied').innerText = appliedCount;
-                document.getElementById('countApplied').innerText = appliedCount;
+        function toggleModalFav() {
+            if (!activeModalJob) return;
+            toggleFav(activeModalJob.id);
+            updateModalFavState();
+        }
+
+        function updateModalStatusState() {
+            if (!activeModalJob) return;
+            const btn = document.getElementById('modalStatusBtn');
+            const text = document.getElementById('modalStatusText');
+            const isApplied = activeModalJob.status_applied === 'postule';
+            if (isApplied) {
+                btn.className = 'px-3.5 py-2.5 rounded-xl text-xs font-bold border border-emerald-200 bg-emerald-100 text-emerald-800 transition active:scale-95 flex items-center space-x-1.5 shadow-xs';
+                text.innerText = 'Candidature Déposée ✅';
+            } else {
+                btn.className = 'px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 bg-white hover:bg-slate-50 transition active:scale-95 flex items-center space-x-1.5 shadow-xs';
+                text.innerText = 'Marquer Postulé';
             }
         }
 
+        function toggleModalStatus() {
+            if (!activeModalJob) return;
+            toggleStatus(activeModalJob.id);
+            updateModalStatusState();
+        }
+
+        function copyModalLink() {
+            if (!activeModalJob) return;
+            navigator.clipboard.writeText(activeModalJob.link);
+            showToast('📋 Lien officiel copié dans le presse-papier !', 'emerald');
+        }
+
+        // Close on backdrop click
+        document.getElementById('jobModal').addEventListener('click', (e) => {
+            if (e.target.id === 'jobModal') closeModal();
+        });
+
+        // ========================================================
+        // 10. BACKGROUND REFRESH & SCRAPE WITH POLLING
+        // ========================================================
         async function triggerScrape() {
             const btn = document.getElementById('btnScrape');
             const icon = document.getElementById('scrapeIcon');
             const text = document.getElementById('scrapeText');
 
-            icon.classList.add('animate-spin');
-            text.innerText = 'Scraping...';
             btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            icon.classList.add('animate-spin');
+            text.innerText = 'Veille en cours...';
+
+            showToast('🔍 Recherche des nouveaux concours en cours...', 'brand');
 
             try {
-                await fetch('/api/scrape', {method: 'POST'});
-                let checks = 0;
-                const interval = setInterval(async () => {
-                    checks++;
-                    const res = await fetch('/api/jobs');
-                    const data = await res.json();
-                    if (!data.is_scraping || checks > 15) {
-                        clearInterval(interval);
-                        icon.classList.remove('animate-spin');
-                        text.innerText = 'Actualiser';
-                        btn.disabled = false;
-                        allJobs = data.jobs || [];
-                        localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
-                        updateStats(data.stats);
-                        applyFilters();
-                    }
-                }, 2000);
+                const res = await fetch('/api/scrape', { method: 'POST' });
+                const data = await res.json();
+                startScrapePolling();
             } catch (err) {
-                icon.classList.remove('animate-spin');
-                text.innerText = 'Actualiser';
-                btn.disabled = false;
+                showToast('❌ Erreur lors du lancement de la veille', 'rose');
+                resetScrapeButton();
             }
         }
 
+        function startScrapePolling() {
+            if (isScrapePolling) return;
+            isScrapePolling = true;
+
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/scrape/status');
+                    const data = await res.json();
+                    if (!data.is_scraping) {
+                        clearInterval(interval);
+                        isScrapePolling = false;
+                        resetScrapeButton();
+                        await fetchJobs();
+                        showToast('✅ Veille terminée : Données actualisées !', 'emerald');
+                    }
+                } catch (e) {
+                    clearInterval(interval);
+                    isScrapePolling = false;
+                    resetScrapeButton();
+                }
+            }, 1500);
+        }
+
+        function resetScrapeButton() {
+            const btn = document.getElementById('btnScrape');
+            const icon = document.getElementById('scrapeIcon');
+            const text = document.getElementById('scrapeText');
+
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            icon.classList.remove('animate-spin');
+            text.innerText = 'Actualiser';
+        }
+
+        // ========================================================
+        // 11. EXCEL EXPORT
+        // ========================================================
         function downloadExcel() {
+            showToast('📊 Téléchargement du fichier Excel en cours...', 'emerald');
             window.location.href = '/api/export/excel';
         }
 
-        fetchJobs();
+        // ========================================================
+        // 12. TOAST NOTIFICATION ENGINE
+        // ========================================================
+        function showToast(message, type = 'emerald') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const bgClass = type === 'emerald' ? 'bg-emerald-900/90 text-white border-emerald-700/60' :
+                            type === 'rose' ? 'bg-rose-900/90 text-white border-rose-700/60' :
+                            type === 'brand' ? 'bg-slate-900/90 text-white border-slate-700/60' :
+                            'bg-slate-800/90 text-white border-slate-700/60';
+
+            toast.className = `${bgClass} backdrop-blur-md px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold shadow-xl border flex items-center space-x-2.5 pointer-events-auto transform translate-y-4 opacity-0 transition-all duration-200`;
+            toast.innerHTML = `
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            // Animate out & remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 250);
+            }, 3000);
+        }
+
+        // ========================================================
+        // 13. KEYBOARD SHORTCUTS
+        // ========================================================
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Focus search on '/'
+                if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+                // Close modal on Escape
+                if (e.key === 'Escape') {
+                    if (activeModalJob) {
+                        closeModal();
+                    } else {
+                        clearSearch();
+                    }
+                }
+                // Quick switch tabs 1, 2, 3, 4
+                if (document.activeElement.tagName !== 'INPUT') {
+                    if (e.key === '1') setTab('all');
+                    if (e.key === '2') setTab('favorites');
+                    if (e.key === '3') setTab('applied');
+                    if (e.key === '4') setTab('history');
+                }
+            });
+        }
     </script>
 </body>
 </html>

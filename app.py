@@ -8,7 +8,8 @@ import config
 from scraper import fetch_all_jobs
 from database import (
     init_db, save_jobs, get_all_jobs, toggle_favorite, update_status,
-    get_stats, authenticate_user, record_daily_history, get_daily_history
+    get_stats, authenticate_user, record_daily_history, get_daily_history,
+    calculate_stats
 )
 from sheets_manager import sync_all_storage
 from notifier import send_telegram_message, send_email_notification
@@ -16,7 +17,7 @@ from notifier import send_telegram_message, send_email_notification
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "wadifa-secret-super-key-2026-xyz-morocco")
 
-# Initialisation de la base Supabase / SQLite
+# Initialisation unique de la base Supabase / SQLite
 init_db()
 
 is_scraping = False
@@ -69,7 +70,7 @@ def index():
 @login_required
 def api_get_jobs():
     jobs = get_all_jobs(active_only=False)
-    stats = get_stats()
+    stats = calculate_stats(jobs)
     return jsonify({
         "jobs": jobs,
         "stats": stats,
@@ -77,6 +78,12 @@ def api_get_jobs():
         "profile": config.PROFILE_NAME,
         "user": session.get("user", {})
     })
+
+@app.route("/api/scrape/status", methods=["GET"])
+@login_required
+def api_scrape_status():
+    return jsonify({"is_scraping": is_scraping})
+
 
 @app.route("/api/history", methods=["GET"])
 @login_required
