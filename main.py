@@ -39,8 +39,8 @@ def main():
         sync_all_storage([])
         return
 
-    # Sauvegarde locale permanente dans la base SQLite
-    from database import save_jobs
+    # Sauvegarde dans Supabase / SQLite et enregistrement dans l'historique
+    from database import save_jobs, record_daily_history
     save_jobs(jobs)
 
     # 2. Vérification des nouvelles offres vs historique
@@ -48,7 +48,16 @@ def main():
     seen_ids = set(history.get("seen_ids", []))
     
     new_jobs = [j for j in jobs if j["id"] not in seen_ids]
-    print(f"\n📊 Total concours actifs : {len(jobs)} | Nouveaux concours : {len(new_jobs)}")
+    urgent_count = sum(1 for j in jobs if j.get("days_left", 99) <= 3)
+    today_str = date.today().strftime("%d/%m/%Y")
+    record_daily_history(
+        run_date=today_str,
+        total_jobs=len(jobs),
+        new_jobs=len(new_jobs),
+        urgent_jobs=urgent_count,
+        sources="emploi-public.ma + wadifa-info.com"
+    )
+    print(f"\n📊 Total concours actifs : {len(jobs)} | Nouveaux concours : {len(new_jobs)} | Historique quotidien mis à jour")
 
     # 3. Synchronisation Google Sheets, Excel et Dashboard HTML
     print("\n💾 Synchronisation des fichiers et Google Sheets...")

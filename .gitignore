@@ -6,3 +6,4 @@ service_account.json
 .venv/
 env/
 venv/
+wadifa_local.db

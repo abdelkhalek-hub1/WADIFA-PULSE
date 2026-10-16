@@ -31,14 +31,25 @@
             </div>
 
             <div class="flex items-center space-x-3">
-                <button id="btnExportExcel" onclick="downloadExcel()" class="inline-flex items-center px-3.5 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
+                <button id="btnExportExcel" onclick="downloadExcel()" class="inline-flex items-center px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
                     <i class="ph-bold ph-microsoft-excel-logo mr-1.5 text-emerald-600"></i>
                     Export Excel
                 </button>
-                <button id="btnScrape" onclick="triggerScrape()" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md shadow-emerald-200">
-                    <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise mr-2 text-base"></i>
+                <button id="btnScrape" onclick="triggerScrape()" class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md shadow-emerald-200">
+                    <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise mr-1.5 text-sm"></i>
                     <span id="scrapeText">Actualiser</span>
                 </button>
+
+                <!-- User & Logout -->
+                <div class="h-6 w-px bg-slate-200 mx-1"></div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs" title="{{ user.email }}">
+                        {{ user.name[0] if user.name else 'A' }}
+                    </div>
+                    <a href="/logout" title="Se déconnecter" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition text-base">
+                        <i class="ph-bold ph-sign-out"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -104,10 +115,14 @@
                         <span>Postulés</span>
                         <span id="countApplied" class="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
                     </button>
+                    <button onclick="setTab('history')" id="tab-history" class="pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5">
+                        <i class="ph-bold ph-clock-counter-clockwise"></i>
+                        <span>Historique quotidien</span>
+                    </button>
                 </div>
 
                 <!-- View Switcher -->
-                <div class="flex items-center space-x-2">
+                <div id="viewSwitcher" class="flex items-center space-x-2">
                     <span class="text-xs text-slate-400">Vue :</span>
                     <button onclick="setView('cards')" id="btnViewCards" class="p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100">
                         <i class="ph-bold ph-squares-four text-base"></i>
@@ -118,8 +133,8 @@
                 </div>
             </div>
 
-            <!-- Search and Filter Inputs -->
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <!-- Search and Filter Inputs (Caché si onglet Historique) -->
+            <div id="filterBar" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <div class="sm:col-span-5 relative">
                     <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-base"></i>
                     <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Rechercher par ministère, poste, mot-clé..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition bg-slate-50/50">
@@ -144,11 +159,10 @@
             </div>
         </div>
 
-        <!-- Jobs Container (Cards or Table) -->
-        <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <!-- Cards will be populated by JS -->
-        </div>
+        <!-- Section 1 : Jobs Cards View -->
+        <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
 
+        <!-- Section 2 : Jobs Table View -->
         <div id="tableView" class="hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -163,8 +177,33 @@
                             <th class="py-3.5 px-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-100">
-                        <!-- Rows populated by JS -->
+                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3 : Historique Quotidien (Daily History View) -->
+        <div id="historyView" class="hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Historique des Veilles Quotidiennes</h3>
+                    <p class="text-xs text-slate-500">Enregistré dans la base Supabase PostgreSQL</p>
+                </div>
+                <span class="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-full border border-emerald-200">Cloud Sync Actif</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                        <tr>
+                            <th class="py-3.5 px-5">Date d'Exécution</th>
+                            <th class="py-3.5 px-5">Total Détecté</th>
+                            <th class="py-3.5 px-5">Concours Urgents</th>
+                            <th class="py-3.5 px-5">Sources Interrogées</th>
+                            <th class="py-3.5 px-5">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                        <!-- Populated by JS -->
                     </tbody>
                 </table>
             </div>
@@ -175,7 +214,7 @@
             <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto text-3xl mb-3">
                 <i class="ph-bold ph-tray"></i>
             </div>
-            <h3 class="text-base font-semibold text-slate-800">Aucun concours correspondant</h3>
+            <h3 class="text-base font-semibold text-slate-800">Aucun résultat trouvé</h3>
             <p class="text-sm text-slate-500 mt-1">Modifiez vos filtres ou lancez une nouvelle actualisation.</p>
         </div>
 
@@ -184,30 +223,61 @@
     <!-- JavaScript Application Logic -->
     <script>
         let allJobs = [];
+        let historyList = [];
         let currentTab = 'all';
         let currentView = 'cards';
 
-        // Charger les données depuis le backend ou le LocalStorage
         async function fetchJobs() {
             try {
                 const res = await fetch('/api/jobs');
                 const data = await res.json();
                 allJobs = data.jobs || [];
                 
-                // Mettre à jour le LocalStorage comme demandé
                 localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
                 localStorage.setItem('wadifa_last_fetch', new Date().toISOString());
 
                 updateStats(data.stats);
                 applyFilters();
             } catch (err) {
-                console.warn("Connexion serveur échouée, chargement depuis le LocalStorage...", err);
+                console.warn("Chargement depuis LocalStorage...", err);
                 const cached = localStorage.getItem('wadifa_jobs_cache');
                 if (cached) {
                     allJobs = JSON.parse(cached);
                     applyFilters();
                 }
             }
+        }
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch('/api/history');
+                const data = await res.json();
+                historyList = data.history || [];
+                renderHistory();
+            } catch (err) {
+                console.error("Erreur historique", err);
+            }
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            if (historyList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400">Aucun historique enregistré pour le moment. Lancez votre premier scraping.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = historyList.map(h => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3.5 px-5 font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="ph-bold ph-calendar text-emerald-600"></i>
+                        <span>${h.run_date}</span>
+                    </td>
+                    <td class="py-3.5 px-5"><span class="bg-blue-50 text-blue-700 font-bold px-2.5 py-1 rounded-md text-xs">${h.total_jobs} concours</span></td>
+                    <td class="py-3.5 px-5"><span class="bg-rose-50 text-rose-700 font-bold px-2.5 py-1 rounded-md text-xs">${h.urgent_jobs} urgent(s)</span></td>
+                    <td class="py-3.5 px-5 text-xs text-slate-600 font-medium">${h.sources || 'emploi-public + wadifa-info'}</td>
+                    <td class="py-3.5 px-5"><span class="inline-flex items-center text-xs font-semibold text-emerald-700"><i class="ph-bold ph-check mr-1 text-emerald-600"></i> Succès</span></td>
+                </tr>
+            `).join('');
         }
 
         function updateStats(stats) {
@@ -221,24 +291,22 @@
         }
 
         function applyFilters() {
+            if (currentTab === 'history') return;
+
             const query = document.getElementById('searchInput').value.toLowerCase().trim();
             const source = document.getElementById('sourceFilter').value;
             const urgency = document.getElementById('urgencyFilter').value;
 
             const filtered = allJobs.filter(j => {
-                // Filtre onglet
                 if (currentTab === 'favorites' && !j.is_favorite) return false;
                 if (currentTab === 'applied' && j.status_applied !== 'postule') return false;
 
-                // Filtre source
                 if (source !== 'all' && !j.source.includes(source)) return false;
 
-                // Filtre urgence
                 if (urgency === 'urgent' && j.days_left > 3) return false;
                 if (urgency === 'soon' && (j.days_left <= 3 || j.days_left > 7)) return false;
                 if (urgency === 'safe' && j.days_left <= 7) return false;
 
-                // Filtre texte
                 if (query) {
                     const text = `${j.title} ${j.organism} ${j.grade} ${j.diplomas} ${j.specialties}`.toLowerCase();
                     if (!text.includes(query)) return false;
@@ -263,7 +331,6 @@
             }
             emptyState.classList.add('hidden');
 
-            // Render Cards
             cardsContainer.innerHTML = jobs.map(j => {
                 const daysBadge = getDaysBadge(j.days_left);
                 const sourceBadge = j.source.includes('emploi-public') 
@@ -315,7 +382,6 @@
                 `;
             }).join('');
 
-            // Render Table
             tableBody.innerHTML = jobs.map(j => {
                 const daysBadge = getDaysBadge(j.days_left);
                 const sourceBadge = j.source.includes('emploi-public') ? 'emploi-public.ma' : 'wadifa-info.com';
@@ -346,15 +412,45 @@
 
         function setTab(tab) {
             currentTab = tab;
-            ['all', 'favorites', 'applied'].forEach(t => {
+            ['all', 'favorites', 'applied', 'history'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
-                if (t === tab) {
-                    btn.className = 'pb-2.5 tab-active transition flex items-center space-x-1.5';
-                } else {
-                    btn.className = 'pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5 text-slate-500';
+                if (btn) {
+                    if (t === tab) {
+                        btn.className = 'pb-2.5 tab-active transition flex items-center space-x-1.5';
+                    } else {
+                        btn.className = 'pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5 text-slate-500';
+                    }
                 }
             });
-            applyFilters();
+
+            const filterBar = document.getElementById('filterBar');
+            const viewSwitcher = document.getElementById('viewSwitcher');
+            const cardsView = document.getElementById('cardsView');
+            const tableView = document.getElementById('tableView');
+            const historyView = document.getElementById('historyView');
+            const emptyState = document.getElementById('emptyState');
+
+            if (tab === 'history') {
+                filterBar.classList.add('hidden');
+                viewSwitcher.classList.add('hidden');
+                cardsView.classList.add('hidden');
+                tableView.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                historyView.classList.remove('hidden');
+                fetchHistory();
+            } else {
+                filterBar.classList.remove('hidden');
+                viewSwitcher.classList.remove('hidden');
+                historyView.classList.add('hidden');
+                if (currentView === 'cards') {
+                    cardsView.classList.remove('hidden');
+                    tableView.classList.add('hidden');
+                } else {
+                    cardsView.classList.add('hidden');
+                    tableView.classList.remove('hidden');
+                }
+                applyFilters();
+            }
         }
 
         function setView(view) {
@@ -389,7 +485,6 @@
                 if (job) job.is_favorite = data.is_favorite ? 1 : 0;
                 localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
                 applyFilters();
-                // update stats
                 const favCount = allJobs.filter(j => j.is_favorite).length;
                 document.getElementById('statFavorites').innerText = favCount;
                 document.getElementById('countFav').innerText = favCount;
@@ -425,7 +520,6 @@
 
             try {
                 await fetch('/api/scrape', {method: 'POST'});
-                // Poll until finish
                 let checks = 0;
                 const interval = setInterval(async () => {
                     checks++;
@@ -453,7 +547,6 @@
             window.location.href = '/api/export/excel';
         }
 
-        // Init load
         fetchJobs();
     </script>
 </body>
