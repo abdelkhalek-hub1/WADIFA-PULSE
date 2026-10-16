@@ -312,7 +312,7 @@
                             <th class="py-4 px-5">Total détecté</th>
                             <th class="py-4 px-5">Concours Urgents</th>
                             <th class="py-4 px-5">Sources interrogées</th>
-                            <th class="py-4 px-6 text-right">Statut</th>
+                            <th class="py-4 px-6 text-right">Offres Détectées</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-slate-100">
@@ -408,6 +408,42 @@
                         <i class="ph-bold ph-arrow-square-out text-base"></i>
                     </a>
                 </div>
+            </div>
+    </div>
+
+    <!-- History Details Modal -->
+    <div id="historyDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs transition-opacity duration-200">
+        <div id="historyDetailCard" class="bg-white max-w-3xl w-full rounded-2xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-5 max-h-[88vh] overflow-y-auto transform transition-transform duration-200 scale-95">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <div class="flex items-center space-x-2 mb-1.5 flex-wrap gap-y-1">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <i class="ph-bold ph-calendar text-emerald-600"></i>
+                            <span id="histModalDate"></span>
+                        </span>
+                        <span id="histModalTotalBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700"></span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 leading-snug">Offres Détectées lors de cette Veille</h3>
+                    <p id="histModalSources" class="text-xs text-slate-500 mt-0.5"></p>
+                </div>
+                <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0">
+                    <i class="ph-bold ph-x text-base"></i>
+                </button>
+            </div>
+
+            <!-- List of historical jobs -->
+            <div id="histModalJobsList" class="space-y-3">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Instantané sauvegardé dans Supabase PostgreSQL</span>
+                </span>
+                <button onclick="closeHistoryModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs">
+                    Fermer
+                </button>
             </div>
         </div>
     </div>
@@ -873,9 +909,11 @@
                         ${h.sources || 'emploi-public.ma + wadifa-info.com'}
                     </td>
                     <td class="py-4 px-6 text-right">
-                        <span class="inline-flex items-center text-xs font-semibold text-emerald-700">
-                            <i class="ph-bold ph-check-circle mr-1 text-emerald-600"></i> Succès
-                        </span>
+                        <button onclick="openHistoryDetails(${h.id})" 
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all active:scale-95 shadow-xs">
+                            <i class="ph-bold ph-list-magnifying-glass text-base text-emerald-700"></i>
+                            <span>Consulter les offres (${(h.jobs || []).length})</span>
+                        </button>
                     </td>
                 </tr>
             `).join('');
@@ -984,6 +1022,77 @@
         document.getElementById('jobModal').addEventListener('click', (e) => {
             if (e.target.id === 'jobModal') closeModal();
         });
+
+        document.getElementById('historyDetailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'historyDetailModal') closeHistoryModal();
+        });
+
+        function openHistoryDetails(historyId) {
+            const item = historyList.find(h => h.id === historyId);
+            if (!item) return;
+
+            document.getElementById('histModalDate').innerText = `Veille du ${item.run_date} (${item.created_at || ''})`;
+            document.getElementById('histModalTotalBadge').innerText = `${(item.jobs || []).length} offre(s) enregistrée(s)`;
+            document.getElementById('histModalSources').innerText = `Sources interrogées : ${item.sources || 'emploi-public.ma + wadifa-info.com'}`;
+
+            const container = document.getElementById('histModalJobsList');
+            if (!item.jobs || item.jobs.length === 0) {
+                container.innerHTML = `
+                    <div class="py-12 text-center text-slate-400">
+                        <i class="ph-bold ph-folder-open text-3xl mb-2 block"></i>
+                        Aucun concours enregistré dans cet instantané.
+                    </div>
+                `;
+            } else {
+                container.innerHTML = item.jobs.map((j) => {
+                    const daysBadge = getUrgencyBadge(j.days_left);
+                    const sourceBadge = (j.source && j.source.includes('emploi-public'))
+                        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80"><i class="ph-bold ph-bank"></i>emploi-public.ma</span>'
+                        : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80"><i class="ph-bold ph-globe"></i>wadifa-info.com</span>';
+
+                    return `
+                    <div class="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all space-y-2">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="flex items-center space-x-2">
+                                ${sourceBadge}
+                                ${daysBadge}
+                            </div>
+                            <span class="text-xs text-slate-500 font-medium">Limite : <strong class="text-slate-800">${j.deadline_str || j.deadline_date || '-'}</strong></span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-emerald-700">${j.organism || 'Organisme Public'}</p>
+                            <h4 class="text-sm font-bold text-slate-900 leading-snug mt-0.5">${j.title}</h4>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                            <span class="text-slate-600 truncate max-w-md">${j.diplomas || 'Technicien Spécialisé'} &middot; <strong class="text-emerald-800">${j.specialties || 'Full Stack'}</strong></span>
+                            <a href="${j.link}" target="_blank" class="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline flex-shrink-0">
+                                <span>Consulter l'offre</span>
+                                <i class="ph-bold ph-arrow-up-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+
+            const modal = document.getElementById('historyDetailModal');
+            const card = document.getElementById('historyDetailCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeHistoryModal() {
+            const modal = document.getElementById('historyDetailModal');
+            const card = document.getElementById('historyDetailCard');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 150);
+        }
 
         // ========================================================
         // 10. BACKGROUND REFRESH & SCRAPE WITH POLLING
@@ -1105,8 +1214,11 @@
                 }
                 // Close modal on Escape
                 if (e.key === 'Escape') {
+                    const histModal = document.getElementById('historyDetailModal');
                     if (activeModalJob) {
                         closeModal();
+                    } else if (histModal && !histModal.classList.contains('hidden')) {
+                        closeHistoryModal();
                     } else {
                         clearSearch();
                     }

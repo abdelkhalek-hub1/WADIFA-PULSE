@@ -116,7 +116,8 @@ def api_scrape():
                     total_jobs=len(jobs),
                     new_jobs=len(jobs),
                     urgent_jobs=urgent_count,
-                    sources="emploi-public.ma + wadifa-info.com"
+                    sources="emploi-public.ma + wadifa-info.com",
+                    jobs_snapshot=jobs
                 )
                 
                 # 3. Synchronisation Sheets et alertes

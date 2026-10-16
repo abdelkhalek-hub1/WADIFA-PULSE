@@ -55,7 +55,8 @@ def main():
         total_jobs=len(jobs),
         new_jobs=len(new_jobs),
         urgent_jobs=urgent_count,
-        sources="emploi-public.ma + wadifa-info.com"
+        sources="emploi-public.ma + wadifa-info.com",
+        jobs_snapshot=jobs
     )
     print(f"\n📊 Total concours actifs : {len(jobs)} | Nouveaux concours : {len(new_jobs)} | Historique quotidien mis à jour")
 

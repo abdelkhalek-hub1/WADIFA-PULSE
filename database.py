@@ -113,6 +113,7 @@ def init_db(force: bool = False):
                 new_jobs INT DEFAULT 0,
                 urgent_jobs INT DEFAULT 0,
                 sources VARCHAR(255),
+                jobs_snapshot TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """)
@@ -150,6 +151,7 @@ def init_db(force: bool = False):
                 new_jobs INTEGER DEFAULT 0,
                 urgent_jobs INTEGER DEFAULT 0,
                 sources TEXT,
+                jobs_snapshot TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """)
@@ -398,18 +400,20 @@ def get_stats() -> dict:
     jobs = get_all_jobs(active_only=False)
     return calculate_stats(jobs)
 
-def record_daily_history(run_date: str, total_jobs: int, new_jobs: int, urgent_jobs: int, sources: str = "emploi-public.ma + wadifa-info.com") -> bool:
-    """Enregistre l'historique d'une exécution de scraping dans Supabase et SQLite."""
+def record_daily_history(run_date: str, total_jobs: int, new_jobs: int, urgent_jobs: int, sources: str = "emploi-public.ma + wadifa-info.com", jobs_snapshot: list[dict] = None) -> bool:
+    """Enregistre l'historique d'une exécution de scraping dans Supabase et SQLite avec les détails complets des concours."""
+    snapshot_json = json.dumps(jobs_snapshot or [], ensure_ascii=False, default=str)
+
     # 1. Enregistrement local
     try:
         s_conn = sqlite3.connect(SQLITE_PATH)
         s_conn.execute("""
-            INSERT INTO daily_history (run_date, total_jobs, new_jobs, urgent_jobs, sources)
-            VALUES (?, ?, ?, ?, ?)
-        """, (run_date, total_jobs, new_jobs, urgent_jobs, sources))
+            INSERT INTO daily_history (run_date, total_jobs, new_jobs, urgent_jobs, sources, jobs_snapshot)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (run_date, total_jobs, new_jobs, urgent_jobs, sources, snapshot_json))
         s_conn.commit()
         s_conn.close()
-    except Exception:
+    except Exception as e:
         pass
 
     # 2. Enregistrement Supabase
@@ -418,31 +422,35 @@ def record_daily_history(run_date: str, total_jobs: int, new_jobs: int, urgent_j
             if db_type == "postgres":
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO daily_history (run_date, total_jobs, new_jobs, urgent_jobs, sources)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (run_date, total_jobs, new_jobs, urgent_jobs, sources))
+                    INSERT INTO daily_history (run_date, total_jobs, new_jobs, urgent_jobs, sources, jobs_snapshot)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (run_date, total_jobs, new_jobs, urgent_jobs, sources, snapshot_json))
                 conn.commit()
-    except Exception:
+    except Exception as e:
         pass
 
     return True
 
 def get_daily_history(limit: int = 30) -> list[dict]:
-    """Récupère l'historique des exécutions par jour."""
+    """Récupère l'historique des exécutions par jour avec le détail complet des concours trouvés."""
     history = []
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
         try:
             if db_type == "postgres":
                 cursor.execute("""
-                    SELECT id, run_date, total_jobs, new_jobs, urgent_jobs, sources, created_at
+                    SELECT id, run_date, total_jobs, new_jobs, urgent_jobs, sources, jobs_snapshot, created_at
                     FROM daily_history
                     ORDER BY id DESC
                     LIMIT %s
                 """, (limit,))
                 rows = cursor.fetchall()
                 for r in rows:
-                    c_at = r[6].strftime("%d/%m/%Y %H:%M") if hasattr(r[6], "strftime") else str(r[6])
+                    c_at = r[7].strftime("%d/%m/%Y %H:%M") if hasattr(r[7], "strftime") else str(r[7])
+                    try:
+                        jobs_list = json.loads(r[6]) if r[6] else []
+                    except Exception:
+                        jobs_list = []
                     history.append({
                         "id": r[0],
                         "run_date": r[1],
@@ -450,17 +458,22 @@ def get_daily_history(limit: int = 30) -> list[dict]:
                         "new_jobs": r[3],
                         "urgent_jobs": r[4],
                         "sources": r[5],
+                        "jobs": jobs_list,
                         "created_at": c_at
                     })
             else:
                 cursor.execute("""
-                    SELECT id, run_date, total_jobs, new_jobs, urgent_jobs, sources, created_at
+                    SELECT id, run_date, total_jobs, new_jobs, urgent_jobs, sources, jobs_snapshot, created_at
                     FROM daily_history
                     ORDER BY id DESC
                     LIMIT ?
                 """, (limit,))
                 rows = cursor.fetchall()
                 for r in rows:
+                    try:
+                        jobs_list = json.loads(r["jobs_snapshot"]) if r["jobs_snapshot"] else []
+                    except Exception:
+                        jobs_list = []
                     history.append({
                         "id": r["id"],
                         "run_date": r["run_date"],
@@ -468,6 +481,7 @@ def get_daily_history(limit: int = 30) -> list[dict]:
                         "new_jobs": r["new_jobs"],
                         "urgent_jobs": r["urgent_jobs"],
                         "sources": r["sources"],
+                        "jobs": jobs_list,
                         "created_at": str(r["created_at"])
                     })
         except Exception as e:
@@ -479,8 +493,12 @@ def get_daily_history(limit: int = 30) -> list[dict]:
             s_conn = sqlite3.connect(SQLITE_PATH)
             s_conn.row_factory = sqlite3.Row
             s_cur = s_conn.cursor()
-            s_cur.execute("SELECT id, run_date, total_jobs, new_jobs, urgent_jobs, sources, created_at FROM daily_history ORDER BY id DESC LIMIT ?", (limit,))
+            s_cur.execute("SELECT id, run_date, total_jobs, new_jobs, urgent_jobs, sources, jobs_snapshot, created_at FROM daily_history ORDER BY id DESC LIMIT ?", (limit,))
             for r in s_cur.fetchall():
+                try:
+                    jobs_list = json.loads(r["jobs_snapshot"]) if r["jobs_snapshot"] else []
+                except Exception:
+                    jobs_list = []
                 history.append({
                     "id": r["id"],
                     "run_date": r["run_date"],
@@ -488,6 +506,7 @@ def get_daily_history(limit: int = 30) -> list[dict]:
                     "new_jobs": r["new_jobs"],
                     "urgent_jobs": r["urgent_jobs"],
                     "sources": r["sources"],
+                    "jobs": jobs_list,
                     "created_at": str(r["created_at"])
                 })
             s_conn.close()

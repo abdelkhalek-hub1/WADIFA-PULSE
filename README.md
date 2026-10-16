@@ -1,60 +1,279 @@
-# 🤖 نظام تتبع مباريات الوظيفة العمومية بالمغرب (Wadifa Bot)
+<div align="center">
 
-نظام ذكي ومؤتمت بالكامل يقوم بمراقبة عروض مباريات الوظيفة العمومية بالمغرب يومياً عبر منصتين رئيسيتين:
-1. 🏛 **البوابة الرسمية للتشغيل العمومي بالمغرب:** [emploi-public.ma](https://www.emploi-public.ma/)
-2. 📰 **بوابة وظيفة إنفو:** [wadifa-info.com](https://www.wadifa-info.com/)
+# WadifaBot Maroc
 
-مخصص بدقة لبروفايل:
-**Développement Digital / Web Full Stack / Informatique (تقني من الدرجة الثالثة / تقني متخصص / Bac+2 / Bac+3)**.
+**Système Autonome de Veille et d'Agrégation des Concours de la Fonction Publique au Maroc**
 
----
+[![Python Version](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0%2B-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Cloud%20Database-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Automated_Cron-2088FF?style=flat-square&logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)](LICENSE)
 
-## 🌟 المميزات الرئيسية
+<p align="center">
+  Agrégation intelligente, déduplication, filtrage par profil technique et tableau de bord haute performance avec historique quotidien et alertes multi-canaux.
+</p>
 
-- 🔍 **فحص مزدوج للمصادر:** يجمع العروض الجديدة يومياً من البوابة الحكومية الرسمية `emploi-public.ma` وبوابة `wadifa-info.com` مع إزالة التكرار الذكي.
-- ⏳ **فلترة الصلاحية:** يستبعد أي كونكور فات فيه أجل الدفيع، ويحسب عدد الأيام المتبقية بدقة.
-- 🎯 **فلترة التخصص:** يستخرج فقط المناصب التي تطابق ديبلوم التقني المتخصص أو الإجازة في المعلوميات وتطوير الويب والبرمجة والشبكات.
-- 📊 **جداول Google Sheets & Excel:** تحديث تلقائي لقاعدة بيانات المباريات النشطة مع إمكانية الوصول من الهاتف.
-- 🌐 **لوحة تحكم تفاعلية (HTML Dashboard):** ملف `concours_actifs.html` يمكن فتحه في أي متصفح بضغطة زر.
-- 📱 **إشعارات WhatsApp:** رسائل فورية ملخصة بكل جديد عبر CallMeBot API.
-- 📧 **إشعارات Email:** تقرير يومي منسق واحترافي عبر Gmail SMTP.
-- ☁️ **تشغيل ذاتي 24/7:** يعمل مجاناً على GitHub Actions كل صباح في الساعة 08:00 صباحاً بدون الحاجة لتشغيل حاسوبك الشخصي.
+</div>
 
 ---
 
-## 📁 بنية المشروع
+## Sommaire
+
+- [Présentation](#présentation)
+- [Architecture du Système](#architecture-du-système)
+- [Fonctionnalités Clés](#fonctionnalités-clés)
+- [Structure du Projet](#structure-du-projet)
+- [Guide d'Installation Rapide](#guide-dinstallation-rapide)
+- [Configuration des Variables d'Environnement](#configuration-des-variables-denvironnement)
+- [Automatisation Cloud (GitHub Actions)](#automatisation-cloud-github-actions)
+- [Sécurité et Confidentialité](#sécurité-et-confidentialité)
+- [Stack Technologique](#stack-technologique)
+
+---
+
+## Présentation
+
+**WadifaBot Maroc** est une plateforme autonome conçue pour automatiser la surveillance des opportunités d'emploi dans le secteur public marocain. Le système interroge quotidiennement les deux sources officielles et de référence :
+
+1. **Portail Officiel du Recrutement Public :** [emploi-public.ma](https://www.emploi-public.ma/)
+2. **Portail National d'Emploi :** [wadifa-info.com](https://www.wadifa-info.com/)
+
+Le moteur cible avec précision le profil technique **Développement Digital / Web Full Stack / Informatique** (grades de Technicien de 3ème grade, Technicien Spécialisé, Bac+2 DUT/BTS/EST/ISTA et licences informatiques).
+
+---
+
+## Architecture du Système
+
+```mermaid
+flowchart TD
+    subgraph Sources ["Sources Externes"]
+        EP["emploi-public.ma\n(Portail Officiel)"]
+        WI["wadifa-info.com\n(Flux RSS & Annonces)"]
+    end
+
+    subgraph Core ["Moteur de Traitement (Python)"]
+        SC["scraper.py\n(Parsing, Filtrage Délais & Tech)"]
+        DB["database.py\n(Connection Pool, SQLite & PostgreSQL)"]
+        SM["sheets_manager.py\n(Google Sheets Webhook & Excel)"]
+        NT["notifier.py\n(Telegram Bot & Gmail SMTP)"]
+    end
+
+    subgraph Storage ["Persistance des Données"]
+        PG[("Supabase Cloud\nPostgreSQL 17")]
+        SQL[("Cache Local\nwadifa_local.db")]
+        HIST[("daily_history\nInstantanés Quotidiens")]
+    end
+
+    subgraph UI ["Interface Utilisateur"]
+        FLASK["app.py (Flask Web Server)"]
+        DASH["Dashboard Web Interactif\n(0ms Optimistic UI, LocalStorage)"]
+        MODAL["Fiches Détaillées des Concours"]
+    end
+
+    EP --> SC
+    WI --> SC
+    SC --> DB
+    DB --> PG
+    DB --> SQL
+    DB --> HIST
+    SC --> SM
+    SC --> NT
+    FLASK --> DASH
+    DASH --> MODAL
+    PG -.-> FLASK
+    SQL -.-> FLASK
+```
+
+---
+
+## Fonctionnalités Clés
+
+### 1. Collecte et Déduplication Intelligente
+- Surveillance automatique multi-sources (`emploi-public.ma` + `wadifa-info.com`).
+- Normalisation et extraction des dates arabes et ISO (ex: `8 نونبر 2026`).
+- Détection des dates limites avec calcul dynamique du temps restant.
+- Déduplication automatique des annonces publiées simultanément sur plusieurs plateformes.
+
+### 2. Tableau de Bord Web Haute Performance (0ms Latency)
+- **Architecture Stale-While-Revalidate :** Chargement instantané à la milliseconde zéro depuis le `localStorage` du navigateur.
+- **Mises à Jour Optimistes (Optimistic UI) :** Bascule instantanée des favoris et du statut des candidatures sans attendre la réponse serveur.
+- **Recherche et Filtrage As-You-Type :** Filtrage instantané en temps réel par mot-clé, ministère, organisme, source ou degré d'urgence.
+- **Modes d'Affichage :** Basculement fluide entre la vue en cartes Bento et la vue tabulaire dense.
+- **Raccourcis Clavier :** Navigation rapide (`/` pour chercher, `Esc` pour fermer les modales, `1-4` pour commuter entre les onglets).
+
+### 3. Historique Quotidien Détaillé (Daily Snapshots)
+- Enregistrement systématique de chaque exécution dans la base Supabase PostgreSQL.
+- **Instantané complet des offres :** Conservation des concours exacts trouvés chaque jour avec titre, organisme, grade, date limite et lien officiel.
+- Consultation et inspection rétrospective de chaque session via une modale dédiée.
+
+### 4. Alertes et Notifications Multi-Canaux
+- **Telegram Bot :** Messages instantanés avec liens directs et encodage UTF-8 sécurisé.
+- **Gmail SMTP :** Rapport formaté par e-mail avec résumé des concours actifs et liens d'accès.
+- **Google Sheets :** Synchronisation cloud via Webhook Google Apps Script pour suivi mobile.
+- **Export Excel :** Génération locale et téléchargement immédiat du fichier `.xlsx`.
+
+### 5. Base de Données Hybride & Pool de Connexions
+- Connexion primaire à **Supabase PostgreSQL 17** via un pool de connexions multithread (`ThreadedConnectionPool`).
+- Miroir local ultra-rapide sur **SQLite** assurant la continuité de service en cas de coupure réseau.
+
+---
+
+## Structure du Projet
 
 ```text
 offre d'emploi/
-├── .github/workflows/
-│   └── daily_concours.yml   # سير العمل التلقائي على GitHub Actions
-├── config.py                # إعدادات الكلمات المفتاحية والفلترة
-├── scraper.py               # محرك جلب العروض من emploi-public.ma و wadifa-info.com
-├── sheets_manager.py        # مزامنة Google Sheets وتوليد Excel و HTML
-├── notifier.py              # إرسال إشعارات WhatsApp و Email
-├── main.py                  # الملف الرئيسي للتشغيل
-├── requirements.txt         # الحزم والمكتبات المطلوبة
-├── .env.example             # نموذج متغيرات البيئة
-├── .env                     # ملف الإعدادات الخاص بك (لا تشاركه)
-├── seen_jobs.json           # سجل لتتبع العروض المرسلة وتجنب التكرار
-├── GUIDE_CONFIG.md          # دليل خطوة بخطوة لتفعيل الإشعارات
-└── README.md                # هذا الملف
+├── .github/
+│   └── workflows/
+│       └── daily_concours.yml     # Automatisation cron GitHub Actions (08:00 UTC)
+├── templates/
+│   ├── index.html                 # Tableau de bord principal Bento (HTML5 + Tailwind)
+│   └── login.html                 # Page d'authentification sécurisée
+├── app.py                         # Serveur d'application web Flask & API REST
+├── config.py                      # Définition du profil cible et mots-clés de filtrage
+├── database.py                    # Couche d'accès aux données (Supabase & SQLite)
+├── scraper.py                     # Moteur d'extraction et normalisation des concours
+├── sheets_manager.py              # Export Excel, HTML et Webhook Google Sheets
+├── notifier.py                    # Dispatcher de notifications Telegram et Gmail
+├── main.py                        # Orchestrateur CLI pour exécution cron
+├── requirements.txt               # Dépendances Python
+├── Lancer_Application.bat         # Lanceur Windows en 1 clic
+├── .env.example                   # Gabarit des variables d'environnement
+└── README.md                      # Documentation du projet
 ```
 
 ---
 
-## 🚀 التشغيل السريع
+## Guide d'Installation Rapide
 
-### 1. تثبيت الحزم المطلوبة:
-```bash
-pip install -r requirements.txt
+### Prérequis
+- Python 3.10 ou version ultérieure
+- Un navigateur web moderne (Chrome, Firefox, Edge, Safari)
+
+### Option 1 : Lancement en 1 Clic (Windows)
+Double-cliquez simplement sur le fichier :
+```cmd
+Lancer_Application.bat
+```
+Le script installe automatiquement les dépendances requises, lance le serveur local et ouvre l'interface sur `http://127.0.0.1:5000`.
+
+### Option 2 : Installation Manuelle (Linux / macOS / Windows)
+
+1. **Cloner le dépôt :**
+   ```bash
+   git clone https://github.com/abdelkhalek-hub1/wadifa-bot.git
+   cd wadifa-bot
+   ```
+
+2. **Créer et activer un environnement virtuel :**
+   ```bash
+   python -m venv .venv
+   # Windows :
+   .venv\Scripts\activate
+   # Linux / macOS :
+   source .venv/bin/activate
+   ```
+
+3. **Installer les dépendances :**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configurer l'environnement :**
+   ```bash
+   cp .env.example .env
+   # Complétez les variables dans .env
+   ```
+
+5. **Démarrer l'application web :**
+   ```bash
+   python app.py
+   ```
+   Rendez-vous ensuite sur `http://127.0.0.1:5000/login`.
+
+---
+
+## Configuration des Variables d'Environnement
+
+Créez un fichier `.env` à la racine du projet avec les clés suivantes :
+
+```ini
+# ==========================================
+# Notifications Telegram
+# ==========================================
+TELEGRAM_ENABLED=true
+TELEGRAM_BOT_TOKEN=votre_token_bot_telegram
+TELEGRAM_CHAT_ID=votre_chat_id_telegram
+
+# ==========================================
+# Notifications Email (Gmail SMTP)
+# ==========================================
+EMAIL_ENABLED=true
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=465
+EMAIL_SENDER=votre.email@gmail.com
+EMAIL_PASSWORD=votre_mot_de_passe_application_16_caracteres
+EMAIL_RECIPIENT=votre.email@gmail.com
+
+# ==========================================
+# Synchronisation Google Sheets
+# ==========================================
+GOOGLE_SHEETS_ENABLED=true
+GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/votre_id_script/exec
 ```
 
-### 2. إعداد المتغيرات:
-قم بملء بياناتك في ملف `.env` (واتساب، إيميل، ورابط الشيت) باتباع التعليمات في [GUIDE_CONFIG.md](file:///c:/Users/abdel/Desktop/offre%20d%27emploi/GUIDE_CONFIG.md).
+---
 
-### 3. تجربة التشغيل يدوياً:
-```bash
-python main.py
-```
-ستجد أن البرنامج قام بجمع العروض من الموقعين معاً، وتحديث Google Sheets، وإنشاء الملف التفاعلي `concours_actifs.html` وملف Excel `concours_actifs.xlsx`، وإرسال الإشعارات!
+## Automatisation Cloud (GitHub Actions)
+
+Le fichier `.github/workflows/daily_concours.yml` est préconfiguré pour exécuter la veille chaque matin à **08:00 UTC** sans intervention humaine.
+
+Pour activer l'automatisation cloud :
+1. Poussez le code sur votre dépôt GitHub :
+   ```bash
+   git push origin master
+   ```
+2. Allez dans **Settings > Secrets and variables > Actions > New repository secret**.
+3. Ajoutez les secrets suivants :
+   - `TELEGRAM_ENABLED`
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
+   - `EMAIL_ENABLED`
+   - `EMAIL_SENDER`
+   - `EMAIL_PASSWORD`
+   - `EMAIL_RECIPIENT`
+   - `GOOGLE_SHEETS_ENABLED`
+   - `GOOGLE_SHEET_WEBHOOK_URL`
+
+---
+
+## Sécurité et Confidentialité
+
+- **Hachage Cryptographique :** Les mots de passe sont hachés de manière irréversible via PBKDF2/Werkzeug. Aucun mot de passe en clair n'est stocké dans le code ni dans les dépôts publics.
+- **Séparation des Secrets :** Les identifiants sensibles (`.env`, bases de données locales, tokens) sont strictement ignorés par `.gitignore`.
+- **Chiffrement en Transit :** Toutes les communications avec la base Supabase PostgreSQL utilisent SSL forcé (`sslmode=require`).
+- **Isolation de Session :** Les sessions web utilisent des cookies sécurisés avec protection CSRF et contrôle d'accès strict (`@login_required`).
+
+---
+
+## Stack Technologique
+
+| Composant | Technologie | Description |
+| :--- | :--- | :--- |
+| **Backend** | Python 3.10+ & Flask 3 | Serveur d'application et API REST modulaire |
+| **Scraping** | BeautifulSoup4, Requests, Urllib | Parsing HTML/XML et normalisation des flux |
+| **Base Cloud** | Supabase (PostgreSQL 17) | Persistance relationnelle cloud et pool de connexions |
+| **Base Locale** | SQLite 3 | Cache miroir instantané hors-ligne |
+| **Frontend** | Tailwind CSS & Phosphor Icons | Interface Bento Grid sans dépendance lourde |
+| **Typographie** | Plus Jakarta Sans | Police moderne optimisée pour la lisibilité |
+| **Alertes** | Telegram Bot API & SMTP SSL | Canaux de notification push instantanés |
+| **Reporting** | OpenPyXL & Google Sheets Webhook | Génération automatisée de feuilles de calcul |
+| **CI/CD** | GitHub Actions | Automatisation planifiée 24h/24 et 7j/7 |
+
+---
+
+<div align="center">
+  <sub>Développé avec rigueur pour optimiser l'accès aux opportunités de la fonction publique marocaine.</sub>
+</div>
