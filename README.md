@@ -1,8 +1,8 @@
 <div align="center">
 
-# WadifaBot Maroc
+# WadifaBot Maroc — Veille Concours Fonction Publique Maroc (مباريات الوظيفة العمومية بالمغرب)
 
-**Système Autonome de Veille et d'Agrégation des Concours de la Fonction Publique au Maroc**
+**Plateforme Autonome de Veille, d'Agrégation et de Suivi des Recrutements Publics au Maroc (emploi-public.ma & wadifa-info.com)**
 
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0%2B-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)](LICENSE)
 
 <p align="center">
-  Agrégation intelligente, déduplication, filtrage par profil technique et tableau de bord haute performance avec historique quotidien et alertes multi-canaux.
+  Surveillance continue, déduplication intelligente et tableau de bord haute performance pour les concours de la fonction publique marocaine (profil Développement Web Full Stack & Informatique).
 </p>
 
 </div>
