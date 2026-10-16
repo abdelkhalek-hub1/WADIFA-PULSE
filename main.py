@@ -1,0 +1,81 @@
+import json
+import os
+from datetime import date
+import config
+from scraper import fetch_all_jobs
+from sheets_manager import sync_all_storage
+from notifier import send_whatsapp_message, send_email_notification, send_telegram_message
+
+def load_history() -> dict:
+    """Charge l'historique des concours déjà notifiés pour éviter les doublons."""
+    if os.path.exists(config.HISTORY_FILE):
+        try:
+            with open(config.HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"seen_ids": [], "last_run": ""}
+    return {"seen_ids": [], "last_run": ""}
+
+def save_history(seen_ids: list[str]):
+    """Enregistre l'historique mis à jour."""
+    data = {
+        "seen_ids": list(set(seen_ids)),
+        "last_run": date.today().isoformat()
+    }
+    with open(config.HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def main():
+    print("=" * 65)
+    print("🚀 Démarrage du système autonome de veille emploi public Maroc...")
+    print(f"🎯 Profil ciblé : {config.PROFILE_NAME}")
+    print("=" * 65)
+
+    # 1. Scraping et filtrage des concours valides
+    jobs = fetch_all_jobs()
+
+    if not jobs:
+        print("ℹ️ Aucun concours actif correspondant trouvé pour le moment.")
+        sync_all_storage([])
+        return
+
+    # Sauvegarde locale permanente dans la base SQLite
+    from database import save_jobs
+    save_jobs(jobs)
+
+    # 2. Vérification des nouvelles offres vs historique
+    history = load_history()
+    seen_ids = set(history.get("seen_ids", []))
+    
+    new_jobs = [j for j in jobs if j["id"] not in seen_ids]
+    print(f"\n📊 Total concours actifs : {len(jobs)} | Nouveaux concours : {len(new_jobs)}")
+
+    # 3. Synchronisation Google Sheets, Excel et Dashboard HTML
+    print("\n💾 Synchronisation des fichiers et Google Sheets...")
+    sheet_url = sync_all_storage(jobs)
+
+    # 4. Envoi des notifications (Telegram, Email, WhatsApp)
+    if new_jobs or not seen_ids:
+        print("\n📬 Envoi des notifications en cours...")
+        
+        # Telegram
+        send_telegram_message(jobs, sheet_url)
+
+        # WhatsApp (si configuré)
+        if config.WHATSAPP_ENABLED:
+            send_whatsapp_message(jobs, sheet_url)
+
+        # Email
+        send_email_notification(jobs, sheet_url)
+    else:
+        print("\nℹ️ Pas de nouveaux concours aujourd'hui, les tableaux ont été mis à jour.")
+
+    # 5. Mise à jour de l'historique
+    all_current_ids = [j["id"] for j in jobs]
+    save_history(list(seen_ids.union(all_current_ids)))
+
+    print("\n✅ Opération terminée avec succès !")
+    print("=" * 65)
+
+if __name__ == "__main__":
+    main()

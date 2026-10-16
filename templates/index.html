@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WadifaBot — Veille Concours Fonction Publique</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        .badge-urgent { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-soon { background-color: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+        .badge-safe { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .tab-active { border-bottom: 2px solid #16a34a; color: #16a34a; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white text-xl shadow-md shadow-emerald-200">
+                    <i class="ph-bold ph-briefcase"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">WadifaBot Maroc</h1>
+                    <p class="text-xs text-slate-500">Veille autonome pour : <span id="profileName" class="font-semibold text-emerald-700">Développement Web Full Stack</span></p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btnExportExcel" onclick="downloadExcel()" class="inline-flex items-center px-3.5 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
+                    <i class="ph-bold ph-microsoft-excel-logo mr-1.5 text-emerald-600"></i>
+                    Export Excel
+                </button>
+                <button id="btnScrape" onclick="triggerScrape()" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md shadow-emerald-200">
+                    <i id="scrapeIcon" class="ph-bold ph-arrows-clockwise mr-2 text-base"></i>
+                    <span id="scrapeText">Actualiser</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Concours Actifs</p>
+                    <p id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
+                    <i class="ph-bold ph-list-dashes"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Urgents (≤ 3j)</p>
+                    <p id="statUrgent" class="text-2xl font-bold text-rose-600 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl">
+                    <i class="ph-bold ph-alarm"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Mes Favoris</p>
+                    <p id="statFavorites" class="text-2xl font-bold text-amber-500 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl">
+                    <i class="ph-bold ph-star"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Dossiers Postulés</p>
+                    <p id="statApplied" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl">
+                    <i class="ph-bold ph-check-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls: Tabs, Filters & Search -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                <!-- Tabs -->
+                <div class="flex space-x-6 text-sm font-medium text-slate-500">
+                    <button onclick="setTab('all')" id="tab-all" class="pb-2.5 tab-active transition flex items-center space-x-1.5">
+                        <span>Tous les concours</span>
+                    </button>
+                    <button onclick="setTab('favorites')" id="tab-favorites" class="pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5">
+                        <span>Favoris</span>
+                        <span id="countFav" class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+                    </button>
+                    <button onclick="setTab('applied')" id="tab-applied" class="pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5">
+                        <span>Postulés</span>
+                        <span id="countApplied" class="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+                    </button>
+                </div>
+
+                <!-- View Switcher -->
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Vue :</span>
+                    <button onclick="setView('cards')" id="btnViewCards" class="p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100">
+                        <i class="ph-bold ph-squares-four text-base"></i>
+                    </button>
+                    <button onclick="setView('table')" id="btnViewTable" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700">
+                        <i class="ph-bold ph-table text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search and Filter Inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div class="sm:col-span-5 relative">
+                    <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-base"></i>
+                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Rechercher par ministère, poste, mot-clé..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition bg-slate-50/50">
+                </div>
+
+                <div class="sm:col-span-3">
+                    <select id="sourceFilter" onchange="applyFilters()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50">
+                        <option value="all">Toutes les sources</option>
+                        <option value="emploi-public.ma">emploi-public.ma (Officiel)</option>
+                        <option value="wadifa-info.com">wadifa-info.com</option>
+                    </select>
+                </div>
+
+                <div class="sm:col-span-4">
+                    <select id="urgencyFilter" onchange="applyFilters()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50">
+                        <option value="all">Tous les délais</option>
+                        <option value="urgent">🚨 Urgents (≤ 3 jours)</option>
+                        <option value="soon">⏳ Bientôt (≤ 7 jours)</option>
+                        <option value="safe">🟢 Valides (> 7 jours)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Container (Cards or Table) -->
+        <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Cards will be populated by JS -->
+        </div>
+
+        <div id="tableView" class="hidden bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                        <tr>
+                            <th class="py-3.5 px-4">Organisme</th>
+                            <th class="py-3.5 px-4">Poste & Grade</th>
+                            <th class="py-3.5 px-4">Diplôme & Spécialité</th>
+                            <th class="py-3.5 px-4">Date limite</th>
+                            <th class="py-3.5 px-4">Délai</th>
+                            <th class="py-3.5 px-4">Source</th>
+                            <th class="py-3.5 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200/80">
+            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto text-3xl mb-3">
+                <i class="ph-bold ph-tray"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-800">Aucun concours correspondant</h3>
+            <p class="text-sm text-slate-500 mt-1">Modifiez vos filtres ou lancez une nouvelle actualisation.</p>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let allJobs = [];
+        let currentTab = 'all';
+        let currentView = 'cards';
+
+        // Charger les données depuis le backend ou le LocalStorage
+        async function fetchJobs() {
+            try {
+                const res = await fetch('/api/jobs');
+                const data = await res.json();
+                allJobs = data.jobs || [];
+                
+                // Mettre à jour le LocalStorage comme demandé
+                localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+                localStorage.setItem('wadifa_last_fetch', new Date().toISOString());
+
+                updateStats(data.stats);
+                applyFilters();
+            } catch (err) {
+                console.warn("Connexion serveur échouée, chargement depuis le LocalStorage...", err);
+                const cached = localStorage.getItem('wadifa_jobs_cache');
+                if (cached) {
+                    allJobs = JSON.parse(cached);
+                    applyFilters();
+                }
+            }
+        }
+
+        function updateStats(stats) {
+            if (!stats) return;
+            document.getElementById('statTotal').innerText = stats.total || allJobs.length;
+            document.getElementById('statUrgent').innerText = stats.urgent || 0;
+            document.getElementById('statFavorites').innerText = stats.favorites || 0;
+            document.getElementById('statApplied').innerText = stats.applied || 0;
+            document.getElementById('countFav').innerText = stats.favorites || 0;
+            document.getElementById('countApplied').innerText = stats.applied || 0;
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const source = document.getElementById('sourceFilter').value;
+            const urgency = document.getElementById('urgencyFilter').value;
+
+            const filtered = allJobs.filter(j => {
+                // Filtre onglet
+                if (currentTab === 'favorites' && !j.is_favorite) return false;
+                if (currentTab === 'applied' && j.status_applied !== 'postule') return false;
+
+                // Filtre source
+                if (source !== 'all' && !j.source.includes(source)) return false;
+
+                // Filtre urgence
+                if (urgency === 'urgent' && j.days_left > 3) return false;
+                if (urgency === 'soon' && (j.days_left <= 3 || j.days_left > 7)) return false;
+                if (urgency === 'safe' && j.days_left <= 7) return false;
+
+                // Filtre texte
+                if (query) {
+                    const text = `${j.title} ${j.organism} ${j.grade} ${j.diplomas} ${j.specialties}`.toLowerCase();
+                    if (!text.includes(query)) return false;
+                }
+
+                return true;
+            });
+
+            renderJobs(filtered);
+        }
+
+        function renderJobs(jobs) {
+            const cardsContainer = document.getElementById('cardsView');
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (jobs.length === 0) {
+                cardsContainer.innerHTML = '';
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            // Render Cards
+            cardsContainer.innerHTML = jobs.map(j => {
+                const daysBadge = getDaysBadge(j.days_left);
+                const sourceBadge = j.source.includes('emploi-public') 
+                    ? '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-blue-200">emploi-public.ma</span>'
+                    : '<span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-emerald-200">wadifa-info.com</span>';
+
+                const favColor = j.is_favorite ? 'text-amber-500 fill-amber-500' : 'text-slate-300 hover:text-amber-400';
+                const isApplied = j.status_applied === 'postule';
+
+                return `
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            ${sourceBadge}
+                            <button onclick="toggleFav('${j.id}')" class="text-xl p-1 transition ${favColor}">
+                                <i class="ph-fill ph-star"></i>
+                            </button>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2">${j.grade}</h3>
+                        <p class="text-xs font-medium text-slate-500 mt-1 flex items-center">
+                            <i class="ph-bold ph-buildings mr-1 text-slate-400"></i> ${j.organism}
+                        </p>
+
+                        <div class="mt-4 space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div><span class="font-semibold text-slate-700">Diplôme :</span> ${j.diplomas}</div>
+                            <div><span class="font-semibold text-slate-700">Spécialité :</span> <span class="text-blue-700 font-medium">${j.specialties}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] text-slate-400 uppercase tracking-wide">Délai limite</p>
+                            <div class="flex items-center space-x-2 mt-0.5">
+                                <span class="text-xs font-bold text-slate-800">${j.deadline_str}</span>
+                                ${daysBadge}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <button onclick="toggleApplied('${j.id}', '${isApplied ? 'a_postuler' : 'postule'}')" title="${isApplied ? 'Marqué comme postulé' : 'Marquer comme postulé'}" class="p-2 rounded-lg border text-sm font-medium transition ${isApplied ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
+                                <i class="ph-bold ph-check"></i>
+                            </button>
+                            <a href="${j.link}" target="_blank" class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition">
+                                Postuler <i class="ph-bold ph-arrow-up-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            // Render Table
+            tableBody.innerHTML = jobs.map(j => {
+                const daysBadge = getDaysBadge(j.days_left);
+                const sourceBadge = j.source.includes('emploi-public') ? 'emploi-public.ma' : 'wadifa-info.com';
+                const favColor = j.is_favorite ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400';
+
+                return `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3 px-4 font-semibold text-slate-900">${j.organism}</td>
+                    <td class="py-3 px-4 font-medium">${j.grade}</td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${j.diplomas} <br><span class="text-blue-600 font-medium">${j.specialties}</span></td>
+                    <td class="py-3 px-4 font-semibold text-slate-800">${j.deadline_str}</td>
+                    <td class="py-3 px-4">${daysBadge}</td>
+                    <td class="py-3 px-4 text-xs font-semibold text-slate-500">${sourceBadge}</td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="toggleFav('${j.id}')" class="text-lg ${favColor}"><i class="ph-fill ph-star"></i></button>
+                        <a href="${j.link}" target="_blank" class="inline-block px-3 py-1 rounded bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">Détails</a>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function getDaysBadge(days) {
+            if (days <= 3) return `<span class="badge-urgent text-xs px-2 py-0.5 rounded-full font-bold">🚨 ${days} j</span>`;
+            if (days <= 7) return `<span class="badge-soon text-xs px-2 py-0.5 rounded-full font-bold">⏳ ${days} j</span>`;
+            return `<span class="badge-safe text-xs px-2 py-0.5 rounded-full font-bold">🟢 ${days} j</span>`;
+        }
+
+        function setTab(tab) {
+            currentTab = tab;
+            ['all', 'favorites', 'applied'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    btn.className = 'pb-2.5 tab-active transition flex items-center space-x-1.5';
+                } else {
+                    btn.className = 'pb-2.5 hover:text-slate-800 transition flex items-center space-x-1.5 text-slate-500';
+                }
+            });
+            applyFilters();
+        }
+
+        function setView(view) {
+            currentView = view;
+            const cards = document.getElementById('cardsView');
+            const table = document.getElementById('tableView');
+            const btnCards = document.getElementById('btnViewCards');
+            const btnTable = document.getElementById('btnViewTable');
+
+            if (view === 'cards') {
+                cards.classList.remove('hidden');
+                table.classList.add('hidden');
+                btnCards.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100';
+                btnTable.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700';
+            } else {
+                cards.classList.add('hidden');
+                table.classList.remove('hidden');
+                btnTable.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-100';
+                btnCards.className = 'p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700';
+            }
+        }
+
+        async function toggleFav(jobId) {
+            const res = await fetch('/api/favorite', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: jobId})
+            });
+            const data = await res.json();
+            if (data.success) {
+                const job = allJobs.find(j => j.id === jobId);
+                if (job) job.is_favorite = data.is_favorite ? 1 : 0;
+                localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+                applyFilters();
+                // update stats
+                const favCount = allJobs.filter(j => j.is_favorite).length;
+                document.getElementById('statFavorites').innerText = favCount;
+                document.getElementById('countFav').innerText = favCount;
+            }
+        }
+
+        async function toggleApplied(jobId, newStatus) {
+            const res = await fetch('/api/status', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: jobId, status: newStatus})
+            });
+            const data = await res.json();
+            if (data.success) {
+                const job = allJobs.find(j => j.id === jobId);
+                if (job) job.status_applied = newStatus;
+                localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+                applyFilters();
+                const appliedCount = allJobs.filter(j => j.status_applied === 'postule').length;
+                document.getElementById('statApplied').innerText = appliedCount;
+                document.getElementById('countApplied').innerText = appliedCount;
+            }
+        }
+
+        async function triggerScrape() {
+            const btn = document.getElementById('btnScrape');
+            const icon = document.getElementById('scrapeIcon');
+            const text = document.getElementById('scrapeText');
+
+            icon.classList.add('animate-spin');
+            text.innerText = 'Scraping...';
+            btn.disabled = true;
+
+            try {
+                await fetch('/api/scrape', {method: 'POST'});
+                // Poll until finish
+                let checks = 0;
+                const interval = setInterval(async () => {
+                    checks++;
+                    const res = await fetch('/api/jobs');
+                    const data = await res.json();
+                    if (!data.is_scraping || checks > 15) {
+                        clearInterval(interval);
+                        icon.classList.remove('animate-spin');
+                        text.innerText = 'Actualiser';
+                        btn.disabled = false;
+                        allJobs = data.jobs || [];
+                        localStorage.setItem('wadifa_jobs_cache', JSON.stringify(allJobs));
+                        updateStats(data.stats);
+                        applyFilters();
+                    }
+                }, 2000);
+            } catch (err) {
+                icon.classList.remove('animate-spin');
+                text.innerText = 'Actualiser';
+                btn.disabled = false;
+            }
+        }
+
+        function downloadExcel() {
+            window.location.href = '/api/export/excel';
+        }
+
+        // Init load
+        fetchJobs();
+    </script>
+</body>
+</html>

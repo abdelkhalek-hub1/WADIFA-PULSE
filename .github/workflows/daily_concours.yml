@@ -1,0 +1,54 @@
+name: "Automated Daily Concours Scraper & Notifier"
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape-and-notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 جلب الكود من المستودع
+        uses: actions/checkout@v4
+
+      - name: 🐍 تثبيت بايثون
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 تثبيت الحزم المطلوبة
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 تشغيل البوت وفحص المباريات وإرسال الإشعارات
+        env:
+          EMAIL_ENABLED: "true"
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          TELEGRAM_ENABLED: "true"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WHATSAPP_ENABLED: ${{ secrets.WHATSAPP_ENABLED || 'false' }}
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
+          GOOGLE_SHEETS_ENABLED: "true"
+          GOOGLE_SHEET_WEBHOOK_URL: ${{ secrets.GOOGLE_SHEET_WEBHOOK_URL }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SPREADSHEET_URL: ${{ secrets.SPREADSHEET_URL }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          python main.py
+
+      - name: 💾 حفظ السجل والملفات المحدثة في المستودع
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add seen_jobs.json concours_actifs.xlsx concours_actifs.html || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: تحديث المباريات النشطة والسجل [skip ci]" && git push)
