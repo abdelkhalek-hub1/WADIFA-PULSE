@@ -360,15 +360,63 @@ def send_email_direct(recipient: str, subject: str, html_body: str) -> tuple[boo
         return False, str(e)
 
 
+BILINGUAL_GRADE_SYNONYMS = {
+    "technicien spécialisé": ["تقني", "الدرجة الثالثة", "سلم 9", "technicien", "dts", "dut", "bts"],
+    "technicien": ["تقني", "technicien", "سلم 9", "سلم 8"],
+    "3ème grade": ["الدرجة الثالثة", "سلم 9", "3ème", "3eme"],
+    "ingénieur": ["مهندس", "الدرجة الأولى", "ingenieur", "1er", "سلم 11"],
+    "administrateur": ["متصرف", "administrateur"],
+    "2ème grade": ["الدرجة الثانية", "سلم 11", "2ème", "2eme"],
+    "4ème grade": ["الدرجة الرابعة", "سلم 8", "4ème", "4eme"],
+    "adjoint": ["مساعد", "adjoint"],
+}
+
+BILINGUAL_PROFILE_SYNONYMS = {
+    "développement digital": ["تطوير", "ويب", "برمجة", "رقمي", "web", "digital", "full stack", "fullstack", "informatique", "معلوميات"],
+    "web": ["ويب", "web", "تطوير الويب", "site"],
+    "full stack": ["full stack", "fullstack", "تطوير"],
+    "systèmes et réseaux": ["شبكات", "شبكات المعلوميات", "أنظمة", "réseaux", "reseau", "systeme", "systems"],
+    "cybersécurité": ["cyber", "sécurité", "securite", "أمن", "أمن الأنظمة", "حماية"],
+    "data": ["data", "données", "donnees", "بيانات", "ذكاء"],
+    "intelligence artificielle": ["ذكاء", "ai", "intelligence"],
+    "informatique": ["معلوميات", "معلومات", "نظم المعلومات", "informatique", "تطوير", "برمجة"],
+    "gestion": ["تدبير", "تسيير", "gestion", "management"],
+    "comptabilité": ["محاسبة", "comptabilité", "comptabilite", "finance", "مالية"],
+    "droit": ["قانون", "حقوق", "droit", "juridique"],
+    "ressources humaines": ["موارد بشرية", "rh", "ressources humaines"],
+}
+
 def filter_jobs_for_user_prefs(jobs: list[dict], user_prefs: dict) -> list[dict]:
-    """Filtre la liste globale des concours selon les critères personnalisés d'un utilisateur."""
+    """Filtre la liste globale des concours selon les critères bilingues (Arabe / Français) d'un utilisateur."""
     target_profiles = [p.lower().strip() for p in user_prefs.get("target_profiles", []) if p.strip()]
     target_grades = [g.lower().strip() for g in user_prefs.get("target_grades", []) if g.strip()]
     keywords = [k.lower().strip() for k in user_prefs.get("keywords", []) if k.strip()]
 
-    # Si l'utilisateur n'a configuré aucun filtre restrictif, renvoyer tous les concours actifs
+    # Si l'utilisateur n'a configuré aucun critère, renvoyer une liste vide
     if not target_profiles and not target_grades and not keywords:
-        return jobs
+        return []
+
+    # Construire la liste étendue des synonymes pour les grades
+    grade_tokens = set()
+    for tg in target_grades:
+        grade_tokens.add(tg)
+        for syn_k, syn_list in BILINGUAL_GRADE_SYNONYMS.items():
+            if syn_k in tg or tg in syn_k:
+                grade_tokens.update(syn_list)
+
+    # Construire la liste étendue des synonymes pour profils et mots-clés
+    profile_tokens = set()
+    for prof in target_profiles:
+        profile_tokens.add(prof)
+        for p_k, p_list in BILINGUAL_PROFILE_SYNONYMS.items():
+            if p_k in prof or prof in p_k:
+                profile_tokens.update(p_list)
+
+    for kw in keywords:
+        profile_tokens.add(kw)
+        for p_k, p_list in BILINGUAL_PROFILE_SYNONYMS.items():
+            if p_k in kw or kw in p_k:
+                profile_tokens.update(p_list)
 
     matched_jobs = []
     for j in jobs:
@@ -383,24 +431,12 @@ def filter_jobs_for_user_prefs(jobs: list[dict], user_prefs: dict) -> list[dict]
         # 1. Vérification du grade
         grade_ok = True
         if target_grades:
-            grade_ok = any(
-                tg in grade or tg in title or any(w in grade for w in tg.split() if len(w) > 3)
-                for tg in target_grades
-            )
+            grade_ok = any(tok in grade or tok in full_text for tok in grade_tokens)
 
         # 2. Vérification des profils et mots-clés
         kw_ok = True
         if target_profiles or keywords:
-            search_terms = target_profiles + keywords
-            matched_terms = []
-            for term in search_terms:
-                if term in full_text:
-                    matched_terms.append(term)
-                else:
-                    words = [w for w in term.split() if len(w) > 3]
-                    if words and any(w in full_text for w in words):
-                        matched_terms.append(term)
-            kw_ok = len(matched_terms) > 0
+            kw_ok = any(tok in full_text for tok in profile_tokens)
 
         if grade_ok and kw_ok:
             matched_jobs.append(j)
@@ -535,4 +571,57 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
                 summary["errors"].append(f"Email {user_email}: {em_err}")
 
     return summary
+
+
+def send_otp_email(recipient: str, otp_code: str, user_name: str = "") -> tuple[bool, str]:
+    """Envoie un code de vérification OTP à 6 chiffres par email."""
+    dest = (recipient or "").strip()
+    if not dest or "@" not in dest:
+        return False, "Adresse email destinataire invalide."
+
+    name_display = html.escape(user_name.strip()) if user_name else "Candidat"
+    subject = f"[{otp_code}] Votre code de vérification — Wadifa Pulse"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 25px; margin: 0; color: #1e293b;">
+        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+            <div style="background: linear-gradient(135deg, #15803d, #064e3b); padding: 25px 30px; color: #ffffff;">
+                <div style="font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; opacity: 0.85;">Wadifa Pulse · Sécurité & Authentification</div>
+                <h1 style="margin: 8px 0 0 0; font-size: 20px; font-weight: 800;">Vérification de votre adresse email</h1>
+            </div>
+            
+            <div style="padding: 30px; text-align: center;">
+                <p style="font-size: 15px; color: #334155; margin-top: 0; text-align: left;">
+                    Bonjour <strong>{name_display}</strong>,
+                </p>
+                <p style="font-size: 14px; color: #64748b; line-height: 1.6; text-align: left;">
+                    Merci de vous être inscrit sur Wadifa Pulse. Pour activer votre compte et accéder à votre espace de veille personnalisé, veuillez saisir le code de vérification suivant :
+                </p>
+
+                <div style="margin: 30px 0;">
+                    <div style="display: inline-block; background-color: #f0fdf4; border: 2px dashed #16a34a; border-radius: 12px; padding: 16px 36px;">
+                        <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #14532d;">
+                            {otp_code}
+                        </span>
+                    </div>
+                </div>
+
+                <p style="font-size: 12px; color: #dc2626; font-weight: 600; margin-bottom: 25px;">
+                    ⏳ Ce code expire dans 15 minutes.
+                </p>
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 11px; color: #94a3b8; text-align: left; line-height: 1.5;">
+                    Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement ce message. Votre sécurité est notre priorité absolue.<br>
+                    <strong>Wadifa Pulse</strong> · Observatoire Autonome de Recrutement
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return send_email_direct(recipient=dest, subject=subject, html_body=html_content)
+
 

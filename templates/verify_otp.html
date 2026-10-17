@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification du Compte (OTP) — Wadifa Pulse</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Modern Typography: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        sovereign: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .otp-input {
+            letter-spacing: 0.5em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex items-center justify-center p-4 antialiased selection:bg-emerald-800 selection:text-white">
+
+    <div class="w-full max-w-md">
+        
+        <!-- Header Lockup -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl mb-4 group transition-transform duration-300 hover:scale-105">
+                <img src="{{ url_for('static', filename='icon_transparent.png') }}" alt="Wadifa Pulse Emblem" class="w-12 h-12 object-contain">
+            </div>
+            <div class="flex items-center justify-center space-x-2">
+                <span class="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">Wadifa Pulse · Sécurité</span>
+            </div>
+            <h1 class="text-2xl font-extrabold text-white tracking-tight mt-1">Validation de votre compte</h1>
+            <p class="text-xs text-slate-400 mt-2 max-w-sm mx-auto leading-relaxed">
+                Un code de sécurité à 6 chiffres a été envoyé par email à :<br>
+                <span class="font-mono text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800 mt-1 inline-block">{{ email }}</span>
+            </p>
+        </div>
+
+        <!-- Main OTP Card -->
+        <div class="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            
+            <div class="absolute -right-20 -top-20 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            {% if error %}
+            <div id="errorAlert" class="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2.5">
+                <i class="ph-bold ph-warning-circle text-base flex-shrink-0"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% if success_msg %}
+            <div id="successAlert" class="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center space-x-2.5">
+                <i class="ph-bold ph-check-circle text-base flex-shrink-0"></i>
+                <span>{{ success_msg }}</span>
+            </div>
+            {% endif %}
+
+            <div id="jsAlert" class="hidden mb-5 p-3.5 rounded-xl text-xs flex items-center space-x-2.5"></div>
+
+            <form action="/verify-otp" method="POST" class="space-y-5" id="otpForm">
+                <input type="hidden" name="email" value="{{ email }}">
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2 text-center">
+                        Saisissez le code à 6 chiffres
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="otp_code" 
+                            id="otpCode"
+                            required
+                            maxlength="6"
+                            inputmode="numeric"
+                            autocomplete="one-time-code"
+                            autofocus
+                            placeholder="000000"
+                            class="otp-input w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-2xl font-mono font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-inner"
+                        >
+                    </div>
+                    <p class="text-[11px] text-slate-500 text-center mt-2">
+                        <i class="ph-bold ph-clock mr-1"></i> Ce code reste valide pendant 15 minutes.
+                    </p>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="btnSubmit"
+                    class="w-full py-3.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:scale-98 text-white text-xs font-bold transition duration-200 shadow-lg shadow-emerald-950/40 flex items-center justify-center space-x-2">
+                    <span id="btnText">Vérifier et accéder à mon compte</span>
+                    <i class="ph-bold ph-arrow-right text-sm"></i>
+                </button>
+            </form>
+
+            <!-- Resend Section -->
+            <div class="mt-6 pt-5 border-t border-slate-800 text-center text-xs text-slate-400">
+                <span>Vous n'avez pas reçu le code ?</span>
+                <button 
+                    type="button" 
+                    id="btnResend"
+                    onclick="resendOtp()" 
+                    class="ml-1 font-bold text-emerald-400 hover:text-emerald-300 transition-colors focus:outline-none">
+                    Renvoyer un nouveau code
+                </button>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-800/60">
+                <a href="/login" class="hover:text-slate-300 transition-colors flex items-center space-x-1">
+                    <i class="ph-bold ph-arrow-left text-xs"></i>
+                    <span>Retour à la connexion</span>
+                </a>
+                <span class="font-mono text-[11px]">Wadifa Pulse v2.1</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const otpInput = document.getElementById('otpCode');
+        const otpForm = document.getElementById('otpForm');
+
+        // Filtrer uniquement les chiffres
+        otpInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length === 6) {
+                // Auto submit quand les 6 chiffres sont saisis
+                document.getElementById('btnSubmit').focus();
+            }
+        });
+
+        async function resendOtp() {
+            const btn = document.getElementById('btnResend');
+            const alertBox = document.getElementById('jsAlert');
+            const email = "{{ email }}";
+
+            btn.disabled = true;
+            btn.innerText = "Envoi en cours...";
+
+            try {
+                const res = await fetch('/api/resend-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                const data = await res.json();
+                
+                alertBox.className = data.success 
+                    ? "mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center space-x-2.5"
+                    : "mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2.5";
+                alertBox.innerHTML = `<i class="ph-bold ${data.success ? 'ph-check-circle' : 'ph-warning-circle'} text-base flex-shrink-0"></i><span>${data.message}</span>`;
+                alertBox.classList.remove('hidden');
+
+                if (data.success) {
+                    let seconds = 60;
+                    const interval = setInterval(() => {
+                        seconds--;
+                        if (seconds <= 0) {
+                            clearInterval(interval);
+                            btn.disabled = false;
+                            btn.innerText = "Renvoyer un nouveau code";
+                        } else {
+                            btn.innerText = `Renvoyer (${seconds}s)`;
+                        }
+                    }, 1000);
+                } else {
+                    btn.disabled = false;
+                    btn.innerText = "Renvoyer un nouveau code";
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "Renvoyer un nouveau code";
+                alertBox.className = "mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2.5";
+                alertBox.innerHTML = `<i class="ph-bold ph-warning-circle text-base flex-shrink-0"></i><span>Erreur réseau lors du renvoi.</span>`;
+                alertBox.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

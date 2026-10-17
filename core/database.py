@@ -218,23 +218,37 @@ def init_db(force: bool = False):
     _db_initialized = True
 
 def authenticate_user(email: str, password: str) -> dict | None:
-    """Authentifie un utilisateur depuis la base de données sans rien coder en dur."""
+    """Authentifie un utilisateur depuis la base de données et vérifie le statut de validation email."""
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
         user = None
 
         if db_type == "postgres":
-            cursor.execute("SELECT id, email, password_hash, name FROM users WHERE email = %s", (email.strip().lower(),))
+            cursor.execute("SELECT id, email, password_hash, name, COALESCE(is_verified, FALSE) FROM users WHERE email = %s", (email.strip().lower(),))
             row = cursor.fetchone()
             if row:
                 if check_password_hash(row[2], password):
-                    user = {"id": row[0], "email": row[1], "name": row[3]}
+                    is_verif = bool(row[4])
+                    user = {
+                        "id": row[0],
+                        "email": row[1],
+                        "name": row[3],
+                        "is_verified": is_verif,
+                        "pending_verification": not is_verif
+                    }
         else:
-            cursor.execute("SELECT id, email, password_hash, name FROM users WHERE email = ?", (email.strip().lower(),))
+            cursor.execute("SELECT id, email, password_hash, name, is_verified FROM users WHERE email = ?", (email.strip().lower(),))
             row = cursor.fetchone()
             if row:
                 if check_password_hash(row["password_hash"], password):
-                    user = {"id": row["id"], "email": row["email"], "name": row["name"]}
+                    is_verif = bool(row["is_verified"]) if "is_verified" in row.keys() else True
+                    user = {
+                        "id": row["id"],
+                        "email": row["email"],
+                        "name": row["name"],
+                        "is_verified": is_verif,
+                        "pending_verification": not is_verif
+                    }
 
         # Fallback local SQLite si non trouvé sur postgres
         if not user and db_type == "postgres" and os.path.exists(SQLITE_PATH):
@@ -242,15 +256,23 @@ def authenticate_user(email: str, password: str) -> dict | None:
                 s_conn = sqlite3.connect(SQLITE_PATH)
                 s_conn.row_factory = sqlite3.Row
                 s_cur = s_conn.cursor()
-                s_cur.execute("SELECT id, email, password_hash, name FROM users WHERE email = ?", (email.strip().lower(),))
+                s_cur.execute("SELECT id, email, password_hash, name, is_verified FROM users WHERE email = ?", (email.strip().lower(),))
                 s_row = s_cur.fetchone()
                 if s_row and check_password_hash(s_row["password_hash"], password):
-                    user = {"id": s_row["id"], "email": s_row["email"], "name": s_row["name"]}
+                    is_verif = bool(s_row["is_verified"]) if "is_verified" in s_row.keys() else True
+                    user = {
+                        "id": s_row["id"],
+                        "email": s_row["email"],
+                        "name": s_row["name"],
+                        "is_verified": is_verif,
+                        "pending_verification": not is_verif
+                    }
                 s_conn.close()
             except Exception:
                 pass
 
         return user
+
 
 def save_jobs(jobs: list[dict]):
     """Sauvegarde les concours dans Supabase et en local SQLite de manière optimisée."""
@@ -534,35 +556,54 @@ def get_daily_history(limit: int = 30) -> list[dict]:
 # Fonctions Multi-Tenant v2.0 (Users, Settings & Targets)
 # ==========================================
 
-def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict | None]:
-    """Inscrit un nouvel utilisateur et initialise ses paramètres par défaut."""
+def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict | None, str | None]:
+    """Inscrit un nouvel utilisateur, bloque les emails temporaires et génère un code OTP."""
+    from .security import is_disposable_email, generate_otp_code, get_otp_expiry
+    from .notifier import send_otp_email
+
     email_clean = email.strip().lower()
     name_clean = name.strip()
 
     if not email_clean or "@" not in email_clean:
-        return False, "Adresse email invalide.", None
+        return False, "Adresse email invalide.", None, None
     if len(password) < 6:
-        return False, "Le mot de passe doit comporter au moins 6 caractères.", None
+        return False, "Le mot de passe doit comporter au moins 6 caractères.", None, None
+
+    # Blocage strict des emails temporaires ou jetables
+    is_disp, disp_msg = is_disposable_email(email_clean)
+    if is_disp:
+        return False, disp_msg, None, None
 
     pw_hash = generate_password_hash(password)
+    otp_code = generate_otp_code()
+    otp_expires = get_otp_expiry(15)
 
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
         try:
             if db_type == "postgres":
-                cursor.execute("SELECT id FROM users WHERE email = %s", (email_clean,))
-                if cursor.fetchone():
-                    return False, "Un compte existe déjà avec cette adresse email.", None
+                cursor.execute("SELECT id, is_verified FROM users WHERE email = %s", (email_clean,))
+                existing = cursor.fetchone()
+                if existing:
+                    if existing[1]:
+                        return False, "Un compte actif existe déjà avec cette adresse email. Veuillez vous connecter.", None, None
+                    # Utilisateur non encore vérifié : régénération OTP
+                    cursor.execute("""
+                        UPDATE users SET name = %s, password_hash = %s, otp_code = %s, otp_expires_at = %s
+                        WHERE id = %s RETURNING id, email, name;
+                    """, (name_clean, pw_hash, otp_code, otp_expires, existing[0]))
+                    row = cursor.fetchone()
+                    user_dict = {"id": row[0], "email": row[1], "name": row[2]}
+                else:
+                    cursor.execute("""
+                        INSERT INTO users (email, password_hash, name, is_verified, otp_code, otp_expires_at)
+                        VALUES (%s, %s, %s, FALSE, %s, %s)
+                        RETURNING id, email, name;
+                    """, (email_clean, pw_hash, name_clean, otp_code, otp_expires))
+                    row = cursor.fetchone()
+                    user_dict = {"id": row[0], "email": row[1], "name": row[2]}
 
-                cursor.execute("""
-                    INSERT INTO users (email, password_hash, name, is_verified)
-                    VALUES (%s, %s, %s, TRUE)
-                    RETURNING id, email, name, created_at;
-                """, (email_clean, pw_hash, name_clean))
-                row = cursor.fetchone()
-                user_id = row[0]
-                user_dict = {"id": user_id, "email": row[1], "name": row[2]}
-
+                user_id = user_dict["id"]
                 cursor.execute("""
                     INSERT INTO user_settings (user_id, notification_email)
                     VALUES (%s, %s)
@@ -570,39 +611,164 @@ def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict
                 """, (user_id, email_clean))
 
                 cursor.execute("""
-                    INSERT INTO user_preferences (user_id)
-                    VALUES (%s)
+                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, is_configured)
+                    VALUES (%s, '[]', '[]', '[]', '', FALSE)
                     ON CONFLICT (user_id) DO NOTHING;
                 """, (user_id,))
-
                 conn.commit()
-                return True, "Compte créé avec succès.", user_dict
+
             else:
-                cursor.execute("SELECT id FROM users WHERE email = ?", (email_clean,))
-                if cursor.fetchone():
-                    return False, "Un compte existe déjà avec cette adresse email.", None
+                cursor.execute("SELECT id, is_verified FROM users WHERE email = ?", (email_clean,))
+                existing = cursor.fetchone()
+                if existing:
+                    if bool(existing["is_verified"]):
+                        return False, "Un compte actif existe déjà avec cette adresse email.", None, None
+                    cursor.execute("""
+                        UPDATE users SET name = ?, password_hash = ?, otp_code = ?, otp_expires_at = ?
+                        WHERE id = ?;
+                    """, (name_clean, pw_hash, otp_code, str(otp_expires), existing["id"]))
+                    user_dict = {"id": existing["id"], "email": email_clean, "name": name_clean}
+                else:
+                    cursor.execute("""
+                        INSERT INTO users (email, password_hash, name, is_verified, otp_code, otp_expires_at)
+                        VALUES (?, ?, ?, 0, ?, ?);
+                    """, (email_clean, pw_hash, name_clean, otp_code, str(otp_expires)))
+                    user_id = cursor.lastrowid
+                    user_dict = {"id": user_id, "email": email_clean, "name": name_clean}
 
-                cursor.execute("""
-                    INSERT INTO users (email, password_hash, name, is_verified)
-                    VALUES (?, ?, ?, 1);
-                """, (email_clean, pw_hash, name_clean))
-                user_id = cursor.lastrowid
-                user_dict = {"id": user_id, "email": email_clean, "name": name_clean}
-
+                user_id = user_dict["id"]
                 cursor.execute("""
                     INSERT OR IGNORE INTO user_settings (user_id, notification_email)
                     VALUES (?, ?);
                 """, (user_id, email_clean))
 
                 cursor.execute("""
-                    INSERT OR IGNORE INTO user_preferences (user_id)
-                    VALUES (?);
+                    INSERT OR IGNORE INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, is_configured)
+                    VALUES (?, '[]', '[]', '[]', '', 0);
                 """, (user_id,))
-
                 conn.commit()
-                return True, "Compte créé avec succès.", user_dict
+
+            # Envoi du code OTP par email
+            send_otp_email(email_clean, otp_code, name_clean)
+            return True, "Code de validation envoyé par email.", user_dict, otp_code
+
         except Exception as e:
-            return False, f"Erreur lors de l'inscription : {e}", None
+            return False, f"Erreur lors de l'inscription : {e}", None, None
+
+
+def verify_user_otp(email: str, entered_otp: str) -> tuple[bool, str, dict | None]:
+    """Valide le code OTP saisi par l'utilisateur."""
+    from datetime import datetime
+
+    email_clean = (email or "").strip().lower()
+    otp_clean = (entered_otp or "").strip()
+
+    if not email_clean or not otp_clean:
+        return False, "Veuillez renseigner votre email et le code reçu.", None
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    SELECT id, email, name, is_verified, otp_code, otp_expires_at
+                    FROM users WHERE email = %s;
+                """, (email_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    return False, "Compte introuvable.", None
+
+                user_id, u_email, u_name, is_verif, saved_otp, expires_at = row
+                if is_verif:
+                    return True, "Compte déjà vérifié.", {"id": user_id, "email": u_email, "name": u_name}
+
+                if not saved_otp or saved_otp.strip() != otp_clean:
+                    return False, "Code de vérification incorrect. Veuillez réessayer.", None
+
+                if expires_at:
+                    now_utc = datetime.utcnow()
+                    exp_naive = expires_at.replace(tzinfo=None) if hasattr(expires_at, "replace") else expires_at
+                    if now_utc > exp_naive:
+                        return False, "Ce code a expiré. Veuillez cliquer sur 'Renvoyer le code'.", None
+
+                cursor.execute("""
+                    UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expires_at = NULL
+                    WHERE id = %s;
+                """, (user_id,))
+                conn.commit()
+                return True, "Adresse email validée avec succès !", {"id": user_id, "email": u_email, "name": u_name}
+            else:
+                cursor.execute("""
+                    SELECT id, email, name, is_verified, otp_code, otp_expires_at
+                    FROM users WHERE email = ?;
+                """, (email_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    return False, "Compte introuvable.", None
+
+                if bool(row["is_verified"]):
+                    return True, "Compte déjà vérifié.", {"id": row["id"], "email": row["email"], "name": row["name"]}
+
+                if not row["otp_code"] or str(row["otp_code"]).strip() != otp_clean:
+                    return False, "Code de vérification incorrect.", None
+
+                cursor.execute("""
+                    UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL
+                    WHERE id = ?;
+                """, (row["id"],))
+                conn.commit()
+                return True, "Adresse email validée avec succès !", {"id": row["id"], "email": row["email"], "name": row["name"]}
+        except Exception as e:
+            return False, f"Erreur de validation : {e}", None
+
+
+def resend_user_otp(email: str) -> tuple[bool, str]:
+    """Génère et renvoie un nouveau code OTP par email."""
+    from .security import generate_otp_code, get_otp_expiry
+    from .notifier import send_otp_email
+
+    email_clean = (email or "").strip().lower()
+    if not email_clean:
+        return False, "Adresse email manquante."
+
+    new_otp = generate_otp_code()
+    new_expiry = get_otp_expiry(15)
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("SELECT id, name, is_verified FROM users WHERE email = %s;", (email_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    return False, "Aucun compte associé à cette adresse."
+                if row[2]:
+                    return False, "Ce compte est déjà validé. Vous pouvez vous connecter directement."
+
+                user_id, u_name = row[0], row[1]
+                cursor.execute("""
+                    UPDATE users SET otp_code = %s, otp_expires_at = %s WHERE id = %s;
+                """, (new_otp, new_expiry, user_id))
+                conn.commit()
+            else:
+                cursor.execute("SELECT id, name, is_verified FROM users WHERE email = ?;", (email_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    return False, "Aucun compte associé à cette adresse."
+                if bool(row["is_verified"]):
+                    return False, "Ce compte est déjà validé."
+
+                user_id, u_name = row["id"], row["name"]
+                cursor.execute("""
+                    UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?;
+                """, (new_otp, str(new_expiry), user_id))
+                conn.commit()
+
+            send_otp_email(email_clean, new_otp, u_name)
+            return True, "Un nouveau code de vérification a été envoyé sur votre boîte email."
+        except Exception as e:
+            return False, f"Erreur lors du renvoi : {e}"
+
 
 def update_user_account(user_id: int, name: str, new_password: str = None) -> tuple[bool, str]:
     """Met à jour le nom et optionnellement le mot de passe d'un utilisateur."""
@@ -740,84 +906,96 @@ def get_user_preferences(user_id: int) -> dict:
     """Récupère les préférences de profils et mots-clés d'un utilisateur."""
     default_prefs = {
         "user_id": user_id,
-        "target_profiles": ["Développement Digital Web Full Stack"],
-        "target_grades": ["Technicien Spécialisé (3ème grade)"],
-        "keywords": ["informatique", "web", "full stack"],
-        "education_level": "Bac+2 / Bac+3"
+        "target_profiles": [],
+        "target_grades": [],
+        "keywords": [],
+        "education_level": "",
+        "is_configured": False
     }
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
         try:
             if db_type == "postgres":
                 cursor.execute("""
-                    SELECT target_profiles, target_grades, keywords, education_level
+                    SELECT target_profiles, target_grades, keywords, education_level, COALESCE(is_configured, FALSE)
                     FROM user_preferences WHERE user_id = %s;
                 """, (user_id,))
                 row = cursor.fetchone()
                 if row:
-                    profiles = json.loads(row[0]) if row[0] else default_prefs["target_profiles"]
-                    grades = json.loads(row[1]) if row[1] else default_prefs["target_grades"]
-                    kw = json.loads(row[2]) if row[2] else default_prefs["keywords"]
+                    profiles = json.loads(row[0]) if row[0] else []
+                    grades = json.loads(row[1]) if row[1] else []
+                    kw = json.loads(row[2]) if row[2] else []
+                    is_conf = bool(row[4]) or bool(profiles or grades or kw)
                     return {
                         "user_id": user_id,
-                        "target_profiles": profiles if isinstance(profiles, list) else [profiles],
-                        "target_grades": grades if isinstance(grades, list) else [grades],
-                        "keywords": kw if isinstance(kw, list) else [kw],
-                        "education_level": row[3] or "Bac+2 / Bac+3"
+                        "target_profiles": profiles if isinstance(profiles, list) else [],
+                        "target_grades": grades if isinstance(grades, list) else [],
+                        "keywords": kw if isinstance(kw, list) else [],
+                        "education_level": row[3] or "",
+                        "is_configured": is_conf
                     }
             else:
                 cursor.execute("""
-                    SELECT target_profiles, target_grades, keywords, education_level
+                    SELECT target_profiles, target_grades, keywords, education_level, is_configured
                     FROM user_preferences WHERE user_id = ?;
                 """, (user_id,))
                 row = cursor.fetchone()
                 if row:
-                    profiles = json.loads(row["target_profiles"]) if row["target_profiles"] else default_prefs["target_profiles"]
-                    grades = json.loads(row["target_grades"]) if row["target_grades"] else default_prefs["target_grades"]
-                    kw = json.loads(row["keywords"]) if row["keywords"] else default_prefs["keywords"]
+                    profiles = json.loads(row["target_profiles"]) if row["target_profiles"] else []
+                    grades = json.loads(row["target_grades"]) if row["target_grades"] else []
+                    kw = json.loads(row["keywords"]) if row["keywords"] else []
+                    is_conf = bool(row["is_configured"]) if "is_configured" in row.keys() else bool(profiles or grades or kw)
                     return {
                         "user_id": user_id,
-                        "target_profiles": profiles if isinstance(profiles, list) else [profiles],
-                        "target_grades": grades if isinstance(grades, list) else [grades],
-                        "keywords": kw if isinstance(kw, list) else [kw],
-                        "education_level": row["education_level"] or "Bac+2 / Bac+3"
+                        "target_profiles": profiles if isinstance(profiles, list) else [],
+                        "target_grades": grades if isinstance(grades, list) else [],
+                        "keywords": kw if isinstance(kw, list) else [],
+                        "education_level": row["education_level"] or "",
+                        "is_configured": is_conf
                     }
         except Exception as e:
             print(f"⚠️ Erreur get_user_preferences: {e}")
     return default_prefs
 
 def update_user_preferences(user_id: int, prefs: dict) -> bool:
-    """Met à jour les préférences de recherche et critères de profil."""
+    """Met à jour les préférences de recherche et critères de profil et marque le profil comme configuré."""
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
         try:
-            profiles_json = json.dumps(prefs.get("target_profiles", ["Développement Digital Web Full Stack"]), ensure_ascii=False)
-            grades_json = json.dumps(prefs.get("target_grades", ["Technicien Spécialisé (3ème grade)"]), ensure_ascii=False)
-            keywords_json = json.dumps(prefs.get("keywords", ["informatique", "web"]), ensure_ascii=False)
-            edu = prefs.get("education_level", "Bac+2 / Bac+3").strip()
+            target_profs = prefs.get("target_profiles", [])
+            target_grds = prefs.get("target_grades", [])
+            target_kws = prefs.get("keywords", [])
+            edu = prefs.get("education_level", "").strip()
+
+            profiles_json = json.dumps(target_profs, ensure_ascii=False)
+            grades_json = json.dumps(target_grds, ensure_ascii=False)
+            keywords_json = json.dumps(target_kws, ensure_ascii=False)
+            is_conf = bool(target_profs or target_grds or target_kws or edu)
 
             if db_type == "postgres":
                 cursor.execute("""
-                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, is_configured, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                     ON CONFLICT (user_id) DO UPDATE SET
                         target_profiles = EXCLUDED.target_profiles,
                         target_grades = EXCLUDED.target_grades,
                         keywords = EXCLUDED.keywords,
                         education_level = EXCLUDED.education_level,
+                        is_configured = EXCLUDED.is_configured,
                         updated_at = CURRENT_TIMESTAMP;
-                """, (user_id, profiles_json, grades_json, keywords_json, edu))
+                """, (user_id, profiles_json, grades_json, keywords_json, edu, is_conf))
             else:
                 cursor.execute("""
-                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, updated_at)
-                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, is_configured, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(user_id) DO UPDATE SET
                         target_profiles = excluded.target_profiles,
                         target_grades = excluded.target_grades,
                         keywords = excluded.keywords,
                         education_level = excluded.education_level,
+                        is_configured = excluded.is_configured,
                         updated_at = CURRENT_TIMESTAMP;
-                """, (user_id, profiles_json, grades_json, keywords_json, edu))
+                """, (user_id, profiles_json, grades_json, keywords_json, edu, int(is_conf)))
             conn.commit()
             return True
         except Exception as e:
@@ -825,9 +1003,19 @@ def update_user_preferences(user_id: int, prefs: dict) -> bool:
             return False
 
 def get_user_jobs(user_id: int | None, active_only: bool = True) -> list[dict]:
-    """Récupère les concours avec le statut Favoris et Postulé spécifique à cet utilisateur."""
+    """Récupère les concours strictement filtrés selon les critères configurés par l'utilisateur."""
     if not user_id:
-        return get_all_jobs(active_only=active_only)
+        return []
+
+    prefs = get_user_preferences(user_id)
+    is_conf = prefs.get("is_configured", False)
+    profs = prefs.get("target_profiles", [])
+    grades = prefs.get("target_grades", [])
+    kws = prefs.get("keywords", [])
+
+    # Si l'utilisateur n'a pas encore configuré ses filtres, ne retourner aucun concours (0 par défaut)
+    if not is_conf or (not profs and not grades and not kws):
+        return []
 
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
@@ -848,8 +1036,7 @@ def get_user_jobs(user_id: int | None, active_only: bool = True) -> list[dict]:
 
             cursor.execute(query, (user_id,))
             columns = [desc[0] for desc in cursor.description]
-            jobs = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            return jobs
+            all_jobs = [dict(zip(columns, row)) for row in cursor.fetchall()]
         else:
             query = """
                 SELECT 
@@ -866,8 +1053,11 @@ def get_user_jobs(user_id: int | None, active_only: bool = True) -> list[dict]:
             query += " ORDER BY j.days_left ASC"
 
             cursor.execute(query, (user_id,))
-            jobs = [dict(r) for r in cursor.fetchall()]
-            return jobs
+            all_jobs = [dict(r) for r in cursor.fetchall()]
+
+    from .notifier import filter_jobs_for_user_prefs
+    return filter_jobs_for_user_prefs(all_jobs, prefs)
+
 
 def toggle_user_favorite(user_id: int, job_id: str) -> bool:
     """Bascule le statut favori d'un concours pour un utilisateur spécifique."""
