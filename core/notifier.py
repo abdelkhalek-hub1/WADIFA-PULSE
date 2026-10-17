@@ -196,10 +196,13 @@ def send_email_notification(jobs: list[dict], sheet_url: str = "") -> bool:
         sheet_button_html = f"""
         <div style="text-align: center; margin: 25px 0;">
             <a href="{target_sheet}" target="_blank" style="background-color: #15803d; color: white; padding: 14px 28px; text-decoration: none; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 10px rgba(21, 128, 61, 0.25);">
-                📊 Ouvrir le Tableau Google Sheets en Direct
+                Consulter le Tableau Google Sheets en Direct
             </a>
         </div>
         """
+
+    empty_table_row = '<tr><td colspan="8" style="text-align:center; padding: 20px;">Aucun nouveau concours aujourd&#39;hui.</td></tr>'
+    table_body_html = rows_html if jobs else empty_table_row
 
     html_body = f"""
     <!DOCTYPE html>
@@ -210,7 +213,7 @@ def send_email_notification(jobs: list[dict], sheet_url: str = "") -> bool:
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b;">
         <div style="max-width: 950px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
             <div style="background: linear-gradient(135deg, #15803d, #047857); padding: 25px 30px; color: #ffffff;">
-                <h1 style="margin: 0 0 10px 0; font-size: 22px;">📢 Concours Fonction Publique Maroc — {config.PROFILE_NAME}</h1>
+                <h1 style="margin: 0 0 10px 0; font-size: 22px;">Concours Fonction Publique Maroc — {config.PROFILE_NAME}</h1>
                 <p style="margin: 0; opacity: 0.95; font-size: 14px;">
                     Date de veille : {today_str} | Concours actifs trouvés : <strong>{len(jobs)}</strong> | Sources : <strong>emploi-public.ma + wadifa-info.com</strong>
                 </p>
@@ -238,7 +241,7 @@ def send_email_notification(jobs: list[dict], sheet_url: str = "") -> bool:
                         </tr>
                     </thead>
                     <tbody>
-                        {rows_html if jobs else '<tr><td colspan="8" style="text-align:center; padding: 20px;">Aucun nouveau concours aujourd\'hui.</td></tr>'}
+                        {table_body_html}
                     </tbody>
                 </table>
 
@@ -252,7 +255,7 @@ def send_email_notification(jobs: list[dict], sheet_url: str = "") -> bool:
     """
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"📢 [{len(jobs)} Concours Actifs] Opportunités Fonction Publique Maroc — {today_str}"
+    msg["Subject"] = f"[{len(jobs)} Concours Actifs] Opportunités Fonction Publique Maroc — {today_str}"
     msg["From"] = config.EMAIL_SENDER
     msg["To"] = config.EMAIL_RECIPIENT
 

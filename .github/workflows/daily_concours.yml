@@ -17,10 +17,10 @@ jobs:
       - name: "Cloner le dépôt de code"
         uses: actions/checkout@v4
 
-      - name: "Configurer l'environnement Python 3.11"
+      - name: "Configurer l'environnement Python 3.12"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: "Installer les dépendances logicielles"
