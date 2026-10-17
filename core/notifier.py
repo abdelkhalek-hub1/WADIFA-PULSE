@@ -289,3 +289,250 @@ def send_email_notification(jobs: list[dict], sheet_url: str = "") -> bool:
     except Exception as e:
         print(f"❌ Erreur lors de l'envoi de l'email : {e}")
         return False
+
+
+def send_telegram_direct(chat_id: str, bot_token: str = None, message: str = "") -> tuple[bool, str]:
+    """Envoie un message Telegram direct vers un chat_id donné avec un bot_token personnalisé ou celui par défaut."""
+    token = (bot_token or "").strip() or config.TELEGRAM_BOT_TOKEN
+    c_id = str(chat_id or "").strip()
+
+    if not token or not c_id:
+        return False, "Chat ID ou Bot Token manquant."
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": c_id,
+        "text": message,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True
+    }
+
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        response = urllib.request.urlopen(req, timeout=12)
+        if response.status == 200:
+            return True, "Message envoyé avec succès."
+        return False, f"Code réponse: {response.status}"
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="ignore")
+        try:
+            raw_text = re.sub(r'<[^>]+>', '', message)
+            payload_raw = {"chat_id": c_id, "text": raw_text}
+            req2 = urllib.request.Request(url, data=json.dumps(payload_raw).encode("utf-8"), headers={"Content-Type": "application/json"})
+            resp2 = urllib.request.urlopen(req2, timeout=10)
+            if resp2.status == 200:
+                return True, "Message envoyé (texte brut)."
+        except Exception:
+            pass
+        return False, f"Erreur Telegram ({e.code}): {err_body}"
+    except Exception as e:
+        return False, str(e)
+
+
+def send_email_direct(recipient: str, subject: str, html_body: str) -> tuple[bool, str]:
+    """Envoie un email direct vers un destinataire spécifique via le serveur SMTP configuré."""
+    dest = (recipient or "").strip()
+    if not dest or "@" not in dest:
+        return False, "Adresse email destinataire invalide."
+
+    if not config.EMAIL_SENDER or not config.EMAIL_PASSWORD:
+        return False, "Serveur SMTP non configuré (EMAIL_SENDER ou EMAIL_PASSWORD manquant)."
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = config.EMAIL_SENDER
+    msg["To"] = dest
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+    try:
+        if config.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(config.SMTP_SERVER, config.SMTP_PORT, timeout=15)
+        else:
+            server = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT, timeout=15)
+            server.starttls()
+
+        server.login(config.EMAIL_SENDER, config.EMAIL_PASSWORD)
+        server.sendmail(config.EMAIL_SENDER, [dest], msg.as_string())
+        server.quit()
+        return True, "Email envoyé avec succès."
+    except Exception as e:
+        return False, str(e)
+
+
+def filter_jobs_for_user_prefs(jobs: list[dict], user_prefs: dict) -> list[dict]:
+    """Filtre la liste globale des concours selon les critères personnalisés d'un utilisateur."""
+    target_profiles = [p.lower().strip() for p in user_prefs.get("target_profiles", []) if p.strip()]
+    target_grades = [g.lower().strip() for g in user_prefs.get("target_grades", []) if g.strip()]
+    keywords = [k.lower().strip() for k in user_prefs.get("keywords", []) if k.strip()]
+
+    # Si l'utilisateur n'a configuré aucun filtre restrictif, renvoyer tous les concours actifs
+    if not target_profiles and not target_grades and not keywords:
+        return jobs
+
+    matched_jobs = []
+    for j in jobs:
+        title = str(j.get("title", "")).lower()
+        grade = str(j.get("grade", "")).lower()
+        organism = str(j.get("organism", "")).lower()
+        diplomas = str(j.get("diplomas", "")).lower()
+        specialties = str(j.get("specialties", "")).lower()
+        description = str(j.get("description", "")).lower()
+        full_text = f"{title} {grade} {organism} {diplomas} {specialties} {description}"
+
+        # 1. Vérification du grade
+        grade_ok = True
+        if target_grades:
+            grade_ok = any(
+                tg in grade or tg in title or any(w in grade for w in tg.split() if len(w) > 3)
+                for tg in target_grades
+            )
+
+        # 2. Vérification des profils et mots-clés
+        kw_ok = True
+        if target_profiles or keywords:
+            search_terms = target_profiles + keywords
+            matched_terms = []
+            for term in search_terms:
+                if term in full_text:
+                    matched_terms.append(term)
+                else:
+                    words = [w for w in term.split() if len(w) > 3]
+                    if words and any(w in full_text for w in words):
+                        matched_terms.append(term)
+            kw_ok = len(matched_terms) > 0
+
+        if grade_ok and kw_ok:
+            matched_jobs.append(j)
+
+    return matched_jobs
+
+
+def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
+    """Distribue les alertes personnalisées à tous les utilisateurs actifs."""
+    from .database import get_all_active_users_for_alert
+    
+    users = get_all_active_users_for_alert()
+    summary = {
+        "total_users": len(users),
+        "telegram_sent": 0,
+        "email_sent": 0,
+        "errors": []
+    }
+
+    if not users:
+        print("[INFO] Aucun utilisateur avec alertes actives trouvé.")
+        return summary
+
+    today_str = date.today().strftime("%d/%m/%Y")
+
+    for u in users:
+        user_jobs = filter_jobs_for_user_prefs(jobs, u)
+        user_name = u.get("name") or "Candidat"
+        user_email = u.get("notification_email") or u.get("email")
+        target_sheet = safe_url(u.get("google_sheet_url") or config.SPREADSHEET_URL)
+
+        # 1. Alerte Telegram personnalisée
+        if u.get("telegram_enabled") and u.get("telegram_chat_id"):
+            lines = [
+                f"📢 <b>Wadifa Pulse — Alertes Personnalisées</b>",
+                f"👤 <b>Bonjour {html.escape(user_name)}</b>",
+                f"📅 <b>Date :</b> {today_str}",
+                f"📊 <b>Concours correspondant à votre profil :</b> {len(user_jobs)}",
+                "------------------------------------"
+            ]
+            for i, j in enumerate(user_jobs[:5], 1):
+                clean_link = safe_url(j.get("link", ""))
+                lines.append(
+                    f"{i}️⃣ <b>{html.escape(str(j.get('grade', '')))}</b>\n"
+                    f"🏛 {html.escape(str(j.get('organism', '')))}\n"
+                    f"⏳ Limite : {html.escape(str(j.get('deadline_str', '')))} ({j.get('days_left', 0)} jours restants)\n"
+                    f"🔗 <a href=\"{clean_link}\">Consulter l'offre</a>\n"
+                )
+            if len(user_jobs) > 5:
+                lines.append(f"➕ <i>+ {len(user_jobs) - 5} autres offres sélectionnées sur votre tableau de bord.</i>\n")
+            if target_sheet:
+                lines.append(f"📋 <a href=\"{target_sheet}\"><b>Voir mon Google Sheets</b></a>")
+
+            tg_ok, tg_err = send_telegram_direct(
+                chat_id=u["telegram_chat_id"],
+                bot_token=u.get("telegram_bot_token"),
+                message="\n".join(lines)
+            )
+            if tg_ok:
+                summary["telegram_sent"] += 1
+            else:
+                summary["errors"].append(f"Telegram {u['email']}: {tg_err}")
+
+        # 2. Alerte Email personnalisée
+        if u.get("email_alerts_enabled") and user_email:
+            rows_html = ""
+            for j in user_jobs:
+                days = j.get("days_left", 0)
+                badge_color = "#dc2626" if days <= 3 else ("#d97706" if days <= 7 else "#16a34a")
+                badge_bg = "#fee2e2" if days <= 3 else ("#fef3c7" if days <= 7 else "#dcfce7")
+                rows_html += f"""
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px; font-weight: bold; color: #1e293b;">{j.get('organism', '')}</td>
+                    <td style="padding: 10px; color: #334155;">{j.get('grade', '')}</td>
+                    <td style="padding: 10px; color: #0284c7; font-size: 12px;">{j.get('diplomas', '')}</td>
+                    <td style="padding: 10px; color: #047857; font-size: 12px;">{j.get('specialties', '')}</td>
+                    <td style="padding: 10px; font-weight: bold;">{j.get('deadline_str', '')}</td>
+                    <td style="padding: 10px;">
+                        <span style="background-color: {badge_bg}; color: {badge_color}; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 11px;">
+                            {days} j
+                        </span>
+                    </td>
+                    <td style="padding: 10px;">
+                        <a href="{j.get('link', '#')}" target="_blank" style="background-color: #15803d; color: #ffffff; text-decoration: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; display: inline-block;">
+                            Postuler
+                        </a>
+                    </td>
+                </tr>
+                """
+
+            mail_body = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b;">
+                <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+                    <div style="background: linear-gradient(135deg, #15803d, #047857); padding: 20px; color: #ffffff;">
+                        <h2 style="margin: 0; font-size: 18px;">Wadifa Pulse — Vos Concours Ciblés du Jour</h2>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 13px;">Date : {today_str} | {len(user_jobs)} opportunité(s) correspondant à vos critères</p>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p style="font-size: 14px;">Bonjour <strong>{html.escape(user_name)}</strong>,</p>
+                        <p style="font-size: 13px; color: #475569;">Voici les concours actuellement ouverts correspondant précisément à vos préférences de veille :</p>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; margin-top: 15px;">
+                            <thead>
+                                <tr style="background-color: #f1f5f9; color: #475569;">
+                                    <th style="padding: 10px;">Organisme</th>
+                                    <th style="padding: 10px;">Poste</th>
+                                    <th style="padding: 10px;">Diplôme</th>
+                                    <th style="padding: 10px;">Spécialité</th>
+                                    <th style="padding: 10px;">Date limite</th>
+                                    <th style="padding: 10px;">Délai</th>
+                                    <th style="padding: 10px;">Lien</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows_html if user_jobs else '<tr><td colspan="7" style="text-align:center; padding: 20px; color: #64748b;">Aucun nouveau concours correspondant à vos critères aujourd&#39;hui.</td></tr>'}
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
+                            Notification générée par Wadifa Pulse. Vous pouvez modifier vos alertes à tout moment dans vos Paramètres.
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            subject = f"[{len(user_jobs)} Concours Trouvés] Votre Veille Wadifa Pulse — {today_str}"
+            em_ok, em_err = send_email_direct(user_email, subject, mail_body)
+            if em_ok:
+                summary["email_sent"] += 1
+            else:
+                summary["errors"].append(f"Email {user_email}: {em_err}")
+
+    return summary
+

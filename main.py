@@ -12,6 +12,7 @@ from core import (
     get_all_jobs,
     save_jobs,
     record_daily_history,
+    dispatch_all_user_alerts,
 )
 
 def load_history() -> dict:
@@ -88,8 +89,12 @@ def main():
         if config.WHATSAPP_ENABLED:
             send_whatsapp_message(jobs, sheet_url)
 
-        # Email
+        # Email administrateur
         send_email_notification(jobs, sheet_url)
+
+        # 4.bis Multi-Tenant: Alertes personnalisées pour chaque utilisateur enregistré
+        user_summary = dispatch_all_user_alerts(jobs)
+        print(f"👥 Alertes SaaS diffusées : {user_summary['telegram_sent']} Telegram, {user_summary['email_sent']} Email.")
     else:
         print("\n[INFO] Aucun concours actif correspondant trouvé pour le moment.")
 

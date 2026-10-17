@@ -16,6 +16,16 @@ from .database import (
     calculate_stats,
     toggle_favorite,
     update_status,
+    register_user,
+    get_user_settings,
+    update_user_settings,
+    get_user_preferences,
+    update_user_preferences,
+    get_user_jobs,
+    toggle_user_favorite,
+    update_user_job_status,
+    get_all_active_users_for_alert,
+    update_user_account,
 )
 from .scraper import (
     fetch_all_jobs,
@@ -26,12 +36,17 @@ from .notifier import (
     send_telegram_message,
     send_email_notification,
     send_whatsapp_message,
+    send_telegram_direct,
+    send_email_direct,
+    filter_jobs_for_user_prefs,
+    dispatch_all_user_alerts,
 )
 from .storage import (
     sync_all_storage,
     export_to_excel_or_csv,
     update_google_sheets_webhook,
 )
+
 
 __all__ = [
     "config",
@@ -46,6 +61,15 @@ __all__ = [
     "calculate_stats",
     "toggle_favorite",
     "update_status",
+    "register_user",
+    "get_user_settings",
+    "update_user_settings",
+    "get_user_preferences",
+    "update_user_preferences",
+    "get_user_jobs",
+    "toggle_user_favorite",
+    "update_user_job_status",
+    "get_all_active_users_for_alert",
     "fetch_all_jobs",
     "fetch_emploi_public_jobs",
     "fetch_wadifa_info_jobs",

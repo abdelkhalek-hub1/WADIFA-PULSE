@@ -110,13 +110,20 @@
                         <span id="scrapeText">Actualiser</span>
                     </button>
 
+                    <!-- Settings Button -->
+                    <a href="/settings" title="Paramètres & Canaux d'Alerte" 
+                        class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 active:scale-98 transition shadow-xs">
+                        <i class="ph-bold ph-gear text-slate-600 mr-1.5 text-sm"></i>
+                        <span class="hidden sm:inline">Paramètres</span>
+                    </a>
+
                     <!-- Divider -->
                     <div class="h-5 w-px bg-slate-200"></div>
 
                     <!-- User Account & Logout -->
                     <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs" title="{{ user.email }}">
-                            {{ user.name[0] if user.name else 'A' }}
+                        <div class="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold text-xs" title="{{ user.email }}">
+                            {{ user.name[0] if user.name else 'U' }}
                         </div>
                         <a href="/logout" title="Fermer la session" 
                             class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition">

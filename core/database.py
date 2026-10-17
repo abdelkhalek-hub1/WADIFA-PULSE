@@ -528,3 +528,450 @@ def get_daily_history(limit: int = 30) -> list[dict]:
             pass
 
     return history
+
+
+# ==========================================
+# Fonctions Multi-Tenant v2.0 (Users, Settings & Targets)
+# ==========================================
+
+def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict | None]:
+    """Inscrit un nouvel utilisateur et initialise ses paramètres par défaut."""
+    email_clean = email.strip().lower()
+    name_clean = name.strip()
+
+    if not email_clean or "@" not in email_clean:
+        return False, "Adresse email invalide.", None
+    if len(password) < 6:
+        return False, "Le mot de passe doit comporter au moins 6 caractères.", None
+
+    pw_hash = generate_password_hash(password)
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("SELECT id FROM users WHERE email = %s", (email_clean,))
+                if cursor.fetchone():
+                    return False, "Un compte existe déjà avec cette adresse email.", None
+
+                cursor.execute("""
+                    INSERT INTO users (email, password_hash, name, is_verified)
+                    VALUES (%s, %s, %s, TRUE)
+                    RETURNING id, email, name, created_at;
+                """, (email_clean, pw_hash, name_clean))
+                row = cursor.fetchone()
+                user_id = row[0]
+                user_dict = {"id": user_id, "email": row[1], "name": row[2]}
+
+                cursor.execute("""
+                    INSERT INTO user_settings (user_id, notification_email)
+                    VALUES (%s, %s)
+                    ON CONFLICT (user_id) DO NOTHING;
+                """, (user_id, email_clean))
+
+                cursor.execute("""
+                    INSERT INTO user_preferences (user_id)
+                    VALUES (%s)
+                    ON CONFLICT (user_id) DO NOTHING;
+                """, (user_id,))
+
+                conn.commit()
+                return True, "Compte créé avec succès.", user_dict
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (email_clean,))
+                if cursor.fetchone():
+                    return False, "Un compte existe déjà avec cette adresse email.", None
+
+                cursor.execute("""
+                    INSERT INTO users (email, password_hash, name, is_verified)
+                    VALUES (?, ?, ?, 1);
+                """, (email_clean, pw_hash, name_clean))
+                user_id = cursor.lastrowid
+                user_dict = {"id": user_id, "email": email_clean, "name": name_clean}
+
+                cursor.execute("""
+                    INSERT OR IGNORE INTO user_settings (user_id, notification_email)
+                    VALUES (?, ?);
+                """, (user_id, email_clean))
+
+                cursor.execute("""
+                    INSERT OR IGNORE INTO user_preferences (user_id)
+                    VALUES (?);
+                """, (user_id,))
+
+                conn.commit()
+                return True, "Compte créé avec succès.", user_dict
+        except Exception as e:
+            return False, f"Erreur lors de l'inscription : {e}", None
+
+def update_user_account(user_id: int, name: str, new_password: str = None) -> tuple[bool, str]:
+    """Met à jour le nom et optionnellement le mot de passe d'un utilisateur."""
+    name_clean = (name or "").strip()
+    if not name_clean:
+        return False, "Le nom ne peut pas être vide."
+    
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if new_password and len(new_password) >= 6:
+                pw_hash = generate_password_hash(new_password)
+                if db_type == "postgres":
+                    cursor.execute("""
+                        UPDATE users SET name = %s, password_hash = %s
+                        WHERE id = %s;
+                    """, (name_clean, pw_hash, user_id))
+                else:
+                    cursor.execute("""
+                        UPDATE users SET name = ?, password_hash = ?
+                        WHERE id = ?;
+                    """, (name_clean, pw_hash, user_id))
+            else:
+                if db_type == "postgres":
+                    cursor.execute("""
+                        UPDATE users SET name = %s
+                        WHERE id = %s;
+                    """, (name_clean, user_id))
+                else:
+                    cursor.execute("""
+                        UPDATE users SET name = ?
+                        WHERE id = ?;
+                    """, (name_clean, user_id))
+            conn.commit()
+            return True, "Profil mis à jour avec succès."
+        except Exception as e:
+            return False, f"Erreur lors de la mise à jour : {e}"
+
+
+def get_user_settings(user_id: int) -> dict:
+    """Récupère les paramètres de notification et intégrations d'un utilisateur."""
+    default_settings = {
+        "user_id": user_id,
+        "telegram_enabled": False,
+        "telegram_bot_token": "",
+        "telegram_chat_id": "",
+        "email_alerts_enabled": True,
+        "notification_email": "",
+        "google_sheet_url": ""
+    }
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    SELECT telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url
+                    FROM user_settings WHERE user_id = %s;
+                """, (user_id,))
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        "user_id": user_id,
+                        "telegram_enabled": bool(row[0]),
+                        "telegram_bot_token": row[1] or "",
+                        "telegram_chat_id": row[2] or "",
+                        "email_alerts_enabled": bool(row[3]),
+                        "notification_email": row[4] or "",
+                        "google_sheet_url": row[5] or ""
+                    }
+            else:
+                cursor.execute("""
+                    SELECT telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url
+                    FROM user_settings WHERE user_id = ?;
+                """, (user_id,))
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        "user_id": user_id,
+                        "telegram_enabled": bool(row["telegram_enabled"]),
+                        "telegram_bot_token": row["telegram_bot_token"] or "",
+                        "telegram_chat_id": row["telegram_chat_id"] or "",
+                        "email_alerts_enabled": bool(row["email_alerts_enabled"]),
+                        "notification_email": row["notification_email"] or "",
+                        "google_sheet_url": row["google_sheet_url"] or ""
+                    }
+        except Exception as e:
+            print(f"⚠️ Erreur get_user_settings: {e}")
+    return default_settings
+
+def update_user_settings(user_id: int, settings: dict) -> bool:
+    """Met à jour les paramètres d'alerte et d'intégration de l'utilisateur."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            tg_en = bool(settings.get("telegram_enabled", False))
+            tg_tok = settings.get("telegram_bot_token", "").strip()
+            tg_chat = settings.get("telegram_chat_id", "").strip()
+            em_en = bool(settings.get("email_alerts_enabled", True))
+            em_mail = settings.get("notification_email", "").strip()
+            sheet_url = settings.get("google_sheet_url", "").strip()
+
+            if db_type == "postgres":
+                cursor.execute("""
+                    INSERT INTO user_settings (user_id, telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        telegram_enabled = EXCLUDED.telegram_enabled,
+                        telegram_bot_token = EXCLUDED.telegram_bot_token,
+                        telegram_chat_id = EXCLUDED.telegram_chat_id,
+                        email_alerts_enabled = EXCLUDED.email_alerts_enabled,
+                        notification_email = EXCLUDED.notification_email,
+                        google_sheet_url = EXCLUDED.google_sheet_url,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, (user_id, tg_en, tg_tok, tg_chat, em_en, em_mail, sheet_url))
+            else:
+                cursor.execute("""
+                    INSERT INTO user_settings (user_id, telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        telegram_enabled = excluded.telegram_enabled,
+                        telegram_bot_token = excluded.telegram_bot_token,
+                        telegram_chat_id = excluded.telegram_chat_id,
+                        email_alerts_enabled = excluded.email_alerts_enabled,
+                        notification_email = excluded.notification_email,
+                        google_sheet_url = excluded.google_sheet_url,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, (user_id, int(tg_en), tg_tok, tg_chat, int(em_en), em_mail, sheet_url))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"⚠️ Erreur update_user_settings: {e}")
+            return False
+
+def get_user_preferences(user_id: int) -> dict:
+    """Récupère les préférences de profils et mots-clés d'un utilisateur."""
+    default_prefs = {
+        "user_id": user_id,
+        "target_profiles": ["Développement Digital Web Full Stack"],
+        "target_grades": ["Technicien Spécialisé (3ème grade)"],
+        "keywords": ["informatique", "web", "full stack"],
+        "education_level": "Bac+2 / Bac+3"
+    }
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    SELECT target_profiles, target_grades, keywords, education_level
+                    FROM user_preferences WHERE user_id = %s;
+                """, (user_id,))
+                row = cursor.fetchone()
+                if row:
+                    profiles = json.loads(row[0]) if row[0] else default_prefs["target_profiles"]
+                    grades = json.loads(row[1]) if row[1] else default_prefs["target_grades"]
+                    kw = json.loads(row[2]) if row[2] else default_prefs["keywords"]
+                    return {
+                        "user_id": user_id,
+                        "target_profiles": profiles if isinstance(profiles, list) else [profiles],
+                        "target_grades": grades if isinstance(grades, list) else [grades],
+                        "keywords": kw if isinstance(kw, list) else [kw],
+                        "education_level": row[3] or "Bac+2 / Bac+3"
+                    }
+            else:
+                cursor.execute("""
+                    SELECT target_profiles, target_grades, keywords, education_level
+                    FROM user_preferences WHERE user_id = ?;
+                """, (user_id,))
+                row = cursor.fetchone()
+                if row:
+                    profiles = json.loads(row["target_profiles"]) if row["target_profiles"] else default_prefs["target_profiles"]
+                    grades = json.loads(row["target_grades"]) if row["target_grades"] else default_prefs["target_grades"]
+                    kw = json.loads(row["keywords"]) if row["keywords"] else default_prefs["keywords"]
+                    return {
+                        "user_id": user_id,
+                        "target_profiles": profiles if isinstance(profiles, list) else [profiles],
+                        "target_grades": grades if isinstance(grades, list) else [grades],
+                        "keywords": kw if isinstance(kw, list) else [kw],
+                        "education_level": row["education_level"] or "Bac+2 / Bac+3"
+                    }
+        except Exception as e:
+            print(f"⚠️ Erreur get_user_preferences: {e}")
+    return default_prefs
+
+def update_user_preferences(user_id: int, prefs: dict) -> bool:
+    """Met à jour les préférences de recherche et critères de profil."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            profiles_json = json.dumps(prefs.get("target_profiles", ["Développement Digital Web Full Stack"]), ensure_ascii=False)
+            grades_json = json.dumps(prefs.get("target_grades", ["Technicien Spécialisé (3ème grade)"]), ensure_ascii=False)
+            keywords_json = json.dumps(prefs.get("keywords", ["informatique", "web"]), ensure_ascii=False)
+            edu = prefs.get("education_level", "Bac+2 / Bac+3").strip()
+
+            if db_type == "postgres":
+                cursor.execute("""
+                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        target_profiles = EXCLUDED.target_profiles,
+                        target_grades = EXCLUDED.target_grades,
+                        keywords = EXCLUDED.keywords,
+                        education_level = EXCLUDED.education_level,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, (user_id, profiles_json, grades_json, keywords_json, edu))
+            else:
+                cursor.execute("""
+                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, updated_at)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        target_profiles = excluded.target_profiles,
+                        target_grades = excluded.target_grades,
+                        keywords = excluded.keywords,
+                        education_level = excluded.education_level,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, (user_id, profiles_json, grades_json, keywords_json, edu))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"⚠️ Erreur update_user_preferences: {e}")
+            return False
+
+def get_user_jobs(user_id: int | None, active_only: bool = True) -> list[dict]:
+    """Récupère les concours avec le statut Favoris et Postulé spécifique à cet utilisateur."""
+    if not user_id:
+        return get_all_jobs(active_only=active_only)
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        if db_type == "postgres":
+            query = """
+                SELECT 
+                    j.id, j.title, j.grade, j.organism, j.deadline_date, j.deadline_str, j.days_left,
+                    j.diplomas, j.specialties, j.link, j.source, j.date_found, j.description,
+                    COALESCE(ui.is_favorite, FALSE) as is_favorite,
+                    COALESCE(ui.application_status, 'a_postuler') as status_applied,
+                    j.created_at
+                FROM jobs j
+                LEFT JOIN user_job_interactions ui ON j.id = ui.job_id AND ui.user_id = %s
+            """
+            if active_only:
+                query += " WHERE j.days_left >= 0"
+            query += " ORDER BY j.days_left ASC"
+
+            cursor.execute(query, (user_id,))
+            columns = [desc[0] for desc in cursor.description]
+            jobs = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            return jobs
+        else:
+            query = """
+                SELECT 
+                    j.id, j.title, j.grade, j.organism, j.deadline_date, j.deadline_str, j.days_left,
+                    j.diplomas, j.specialties, j.link, j.source, j.date_found, j.description,
+                    COALESCE(ui.is_favorite, 0) as is_favorite,
+                    COALESCE(ui.application_status, 'a_postuler') as status_applied,
+                    j.created_at
+                FROM jobs j
+                LEFT JOIN user_job_interactions ui ON j.id = ui.job_id AND ui.user_id = ?
+            """
+            if active_only:
+                query += " WHERE j.days_left >= 0"
+            query += " ORDER BY j.days_left ASC"
+
+            cursor.execute(query, (user_id,))
+            jobs = [dict(r) for r in cursor.fetchall()]
+            return jobs
+
+def toggle_user_favorite(user_id: int, job_id: str) -> bool:
+    """Bascule le statut favori d'un concours pour un utilisateur spécifique."""
+    new_fav = False
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    SELECT is_favorite FROM user_job_interactions 
+                    WHERE user_id = %s AND job_id = %s;
+                """, (user_id, job_id))
+                row = cursor.fetchone()
+                if row:
+                    new_fav = not bool(row[0])
+                    cursor.execute("""
+                        UPDATE user_job_interactions SET is_favorite = %s, updated_at = CURRENT_TIMESTAMP
+                        WHERE user_id = %s AND job_id = %s;
+                    """, (new_fav, user_id, job_id))
+                else:
+                    new_fav = True
+                    cursor.execute("""
+                        INSERT INTO user_job_interactions (user_id, job_id, is_favorite)
+                        VALUES (%s, %s, TRUE);
+                    """, (user_id, job_id))
+            else:
+                cursor.execute("""
+                    SELECT is_favorite FROM user_job_interactions 
+                    WHERE user_id = ? AND job_id = ?;
+                """, (user_id, job_id))
+                row = cursor.fetchone()
+                if row:
+                    new_fav = not bool(row["is_favorite"])
+                    cursor.execute("""
+                        UPDATE user_job_interactions SET is_favorite = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE user_id = ? AND job_id = ?;
+                    """, (int(new_fav), user_id, job_id))
+                else:
+                    new_fav = True
+                    cursor.execute("""
+                        INSERT INTO user_job_interactions (user_id, job_id, is_favorite)
+                        VALUES (?, ?, 1);
+                    """, (user_id, job_id))
+            conn.commit()
+            return new_fav
+        except Exception as e:
+            print(f"⚠️ Erreur toggle_user_favorite: {e}")
+            return False
+
+def update_user_job_status(user_id: int, job_id: str, status: str) -> bool:
+    """Met à jour le statut (a_postuler, postule) pour un utilisateur spécifique."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    INSERT INTO user_job_interactions (user_id, job_id, application_status, updated_at)
+                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id, job_id) DO UPDATE SET
+                        application_status = EXCLUDED.application_status,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, (user_id, job_id, status))
+            else:
+                cursor.execute("""
+                    INSERT INTO user_job_interactions (user_id, job_id, application_status, updated_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(user_id, job_id) DO UPDATE SET
+                        application_status = excluded.application_status,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, (user_id, job_id, status))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"⚠️ Erreur update_user_job_status: {e}")
+            return False
+
+def get_all_active_users_for_alert() -> list[dict]:
+    """Récupère tous les utilisateurs ayant activé les alertes avec leurs préférences."""
+    users_list = []
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    SELECT 
+                        u.id, u.email, u.name,
+                        s.telegram_enabled, s.telegram_bot_token, s.telegram_chat_id,
+                        s.email_alerts_enabled, s.notification_email, s.google_sheet_url,
+                        p.target_profiles, p.target_grades, p.keywords, p.education_level
+                    FROM users u
+                    LEFT JOIN user_settings s ON u.id = s.user_id
+                    LEFT JOIN user_preferences p ON u.id = p.user_id
+                    WHERE s.telegram_enabled = TRUE OR s.email_alerts_enabled = TRUE;
+                """)
+                for r in cursor.fetchall():
+                    users_list.append({
+                        "id": r[0], "email": r[1], "name": r[2],
+                        "telegram_enabled": bool(r[3]), "telegram_bot_token": r[4] or "", "telegram_chat_id": r[5] or "",
+                        "email_alerts_enabled": bool(r[6]), "notification_email": r[7] or r[1], "google_sheet_url": r[8] or "",
+                        "target_profiles": json.loads(r[9]) if r[9] else [],
+                        "target_grades": json.loads(r[10]) if r[10] else [],
+                        "keywords": json.loads(r[11]) if r[11] else [],
+                        "education_level": r[12] or ""
+                    })
+        except Exception as e:
+            print(f"⚠️ Erreur get_all_active_users_for_alert: {e}")
+    return users_list
