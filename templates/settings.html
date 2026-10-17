@@ -301,6 +301,43 @@
                         </div>
                     </div>
 
+                    <!-- Alert Days Schedule Card -->
+                    <div class="rounded-xl border border-slate-200 p-5 space-y-4 bg-slate-50/50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                                    <i class="ph-bold ph-calendar-check text-2xl"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Jours de Réception des Alertes</h3>
+                                        <span class="text-[10px] text-indigo-700 bg-indigo-100/70 border border-indigo-200 px-2 py-0.5 rounded-full font-mono font-semibold">08:00 (GMT+1)</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500">Sélectionnez les jours où vous souhaitez recevoir vos alertes sur Telegram</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Presets Quick Select -->
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                            <button type="button" onclick="setAlertDaysPreset('all')" id="presetDaysAll"
+                                class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-indigo-600 text-white border-indigo-700 shadow-2xs">
+                                <i class="ph-bold ph-lightning text-xs"></i>
+                                <span>Tous les jours (7j/7)</span>
+                            </button>
+                            <button type="button" onclick="setAlertDaysPreset('workdays')" id="presetDaysWorkdays"
+                                class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs">
+                                <i class="ph-bold ph-briefcase text-xs"></i>
+                                <span>Jours ouvrables (Lun - Ven)</span>
+                            </button>
+                        </div>
+
+                        <!-- Individual Day Toggles -->
+                        <div class="grid grid-cols-7 gap-1.5 sm:gap-2 pt-2" id="alertDaysContainer">
+                            <!-- Injected dynamically via JS -->
+                        </div>
+                    </div>
+
                     <!-- Email Card -->
                     <div class="rounded-xl border border-slate-200 p-5 space-y-4 bg-slate-50/50">
                         <div class="flex items-center justify-between">
@@ -445,13 +482,24 @@
             education_level: "Bac+2 (DTS / DUT / BTS)"
         };
 
+        const WEEKDAYS = [
+            { key: "lundi", label: "Lun", full: "Lundi" },
+            { key: "mardi", label: "Mar", full: "Mardi" },
+            { key: "mercredi", label: "Mer", full: "Mercredi" },
+            { key: "jeudi", label: "Jeu", full: "Jeudi" },
+            { key: "vendredi", label: "Ven", full: "Vendredi" },
+            { key: "samedi", label: "Sam", full: "Samedi" },
+            { key: "dimanche", label: "Dim", full: "Dimanche" }
+        ];
+
         let currentSettings = {
             telegram_enabled: false,
             telegram_bot_token: "",
             telegram_chat_id: "",
             email_alerts_enabled: true,
             notification_email: "{{ user.email }}",
-            google_sheet_url: ""
+            google_sheet_url: "",
+            alert_days: ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
         };
 
         let telegramPollInterval = null;
@@ -462,6 +510,69 @@
             await loadPreferences();
             await loadSettings();
         });
+
+        function renderAlertDays() {
+            const container = document.getElementById('alertDaysContainer');
+            if (!container) return;
+            const selected = currentSettings.alert_days || [];
+            container.innerHTML = WEEKDAYS.map(day => {
+                const isSel = selected.includes(day.key);
+                return `
+                    <button type="button" onclick="toggleAlertDay('${day.key}')" id="dayBtn_${day.key}"
+                        class="flex flex-col items-center justify-center py-2 sm:py-2.5 px-1 rounded-xl border text-xs font-bold transition ${isSel ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'}">
+                        <span class="text-xs uppercase">${day.label}</span>
+                        <i class="ph-bold ${isSel ? 'ph-check-circle text-white' : 'ph-circle text-slate-300'} text-xs mt-1"></i>
+                    </button>
+                `;
+            }).join('');
+
+            updateAlertDaysPresetsUI();
+        }
+
+        function toggleAlertDay(dayKey) {
+            if (!currentSettings.alert_days) currentSettings.alert_days = [];
+            const idx = currentSettings.alert_days.indexOf(dayKey);
+            if (idx > -1) {
+                if (currentSettings.alert_days.length === 1) {
+                    showToast("Veuillez conserver au moins un jour de réception actif", "amber", "ph-info");
+                    return;
+                }
+                currentSettings.alert_days.splice(idx, 1);
+            } else {
+                currentSettings.alert_days.push(dayKey);
+            }
+            renderAlertDays();
+        }
+
+        function setAlertDaysPreset(mode) {
+            if (mode === 'all') {
+                currentSettings.alert_days = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+            } else if (mode === 'workdays') {
+                currentSettings.alert_days = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"];
+            }
+            renderAlertDays();
+        }
+
+        function updateAlertDaysPresetsUI() {
+            const selected = currentSettings.alert_days || [];
+            const btnAll = document.getElementById('presetDaysAll');
+            const btnWork = document.getElementById('presetDaysWorkdays');
+            if (!btnAll || !btnWork) return;
+
+            const isAll = selected.length === 7;
+            const isWork = selected.length === 5 && !selected.includes('samedi') && !selected.includes('dimanche');
+
+            if (isAll) {
+                btnAll.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-indigo-600 text-white border-indigo-700 shadow-2xs";
+                btnWork.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs";
+            } else if (isWork) {
+                btnWork.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-indigo-600 text-white border-indigo-700 shadow-2xs";
+                btnAll.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs";
+            } else {
+                btnAll.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs";
+                btnWork.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs";
+            }
+        }
 
         function isMobileDevice() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -638,6 +749,7 @@
                     document.getElementById('notificationEmail').value = data.notification_email || "{{ user.email }}";
                     document.getElementById('googleSheetUrl').value = data.google_sheet_url || "";
                     renderTelegramSection();
+                    renderAlertDays();
                 }
             } catch (err) {
                 console.error("Erreur chargement settings:", err);
@@ -869,7 +981,8 @@
                 telegram_bot_token: document.getElementById('telegramBotToken').value.trim(),
                 email_alerts_enabled: document.getElementById('emailEnabled').checked,
                 notification_email: document.getElementById('notificationEmail').value.trim(),
-                google_sheet_url: document.getElementById('googleSheetUrl').value.trim()
+                google_sheet_url: document.getElementById('googleSheetUrl').value.trim(),
+                alert_days: currentSettings.alert_days || ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
             };
 
             try {

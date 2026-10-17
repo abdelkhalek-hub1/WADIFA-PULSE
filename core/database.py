@@ -131,6 +131,18 @@ def init_db(force: bool = False):
                 jobs_snapshot TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS user_settings (
+                user_id INT PRIMARY KEY,
+                telegram_enabled BOOLEAN DEFAULT FALSE,
+                telegram_bot_token VARCHAR(255),
+                telegram_chat_id VARCHAR(100),
+                email_alerts_enabled BOOLEAN DEFAULT TRUE,
+                notification_email VARCHAR(255),
+                google_sheet_url TEXT,
+                alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]';
             """)
         else:
             cursor.executescript("""
@@ -169,7 +181,23 @@ def init_db(force: bool = False):
                 jobs_snapshot TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS user_settings (
+                user_id INTEGER PRIMARY KEY,
+                telegram_enabled INTEGER DEFAULT 0,
+                telegram_bot_token TEXT,
+                telegram_chat_id TEXT,
+                email_alerts_enabled INTEGER DEFAULT 1,
+                notification_email TEXT,
+                google_sheet_url TEXT,
+                alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
             """)
+            cursor.execute("PRAGMA table_info(user_settings);")
+            cols = [col[1] for col in cursor.fetchall()]
+            if "alert_days" not in cols:
+                cursor.execute("ALTER TABLE user_settings ADD COLUMN alert_days TEXT DEFAULT '[\"lundi\",\"mardi\",\"mercredi\",\"jeudi\",\"vendredi\",\"samedi\",\"dimanche\"]';")
+
         conn.commit()
 
     # Initialiser aussi la base locale SQLite en miroir pour un accès instantané
@@ -210,7 +238,23 @@ def init_db(force: bool = False):
             sources TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS user_settings (
+            user_id INTEGER PRIMARY KEY,
+            telegram_enabled INTEGER DEFAULT 0,
+            telegram_bot_token TEXT,
+            telegram_chat_id TEXT,
+            email_alerts_enabled INTEGER DEFAULT 1,
+            notification_email TEXT,
+            google_sheet_url TEXT,
+            alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
         """)
+        s_cur = s_conn.cursor()
+        s_cur.execute("PRAGMA table_info(user_settings);")
+        s_cols = [col[1] for col in s_cur.fetchall()]
+        if "alert_days" not in s_cols:
+            s_conn.execute("ALTER TABLE user_settings ADD COLUMN alert_days TEXT DEFAULT '[\"lundi\",\"mardi\",\"mercredi\",\"jeudi\",\"vendredi\",\"samedi\",\"dimanche\"]';")
         s_conn.commit()
         s_conn.close()
     except Exception:
@@ -809,6 +853,8 @@ def update_user_account(user_id: int, name: str, new_password: str = None) -> tu
             return False, f"Erreur lors de la mise à jour : {e}"
 
 
+DEFAULT_ALERT_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+
 def get_user_settings(user_id: int) -> dict:
     """Récupère les paramètres de notification et intégrations d'un utilisateur."""
     default_settings = {
@@ -818,18 +864,25 @@ def get_user_settings(user_id: int) -> dict:
         "telegram_chat_id": "",
         "email_alerts_enabled": True,
         "notification_email": "",
-        "google_sheet_url": ""
+        "google_sheet_url": "",
+        "alert_days": list(DEFAULT_ALERT_DAYS)
     }
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
         try:
             if db_type == "postgres":
                 cursor.execute("""
-                    SELECT telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url
+                    SELECT telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, alert_days
                     FROM user_settings WHERE user_id = %s;
                 """, (user_id,))
                 row = cursor.fetchone()
                 if row:
+                    days_raw = row[6]
+                    try:
+                        alert_days = json.loads(days_raw) if days_raw else list(DEFAULT_ALERT_DAYS)
+                    except Exception:
+                        alert_days = list(DEFAULT_ALERT_DAYS)
+
                     return {
                         "user_id": user_id,
                         "telegram_enabled": bool(row[0]),
@@ -837,15 +890,22 @@ def get_user_settings(user_id: int) -> dict:
                         "telegram_chat_id": row[2] or "",
                         "email_alerts_enabled": bool(row[3]),
                         "notification_email": row[4] or "",
-                        "google_sheet_url": row[5] or ""
+                        "google_sheet_url": row[5] or "",
+                        "alert_days": alert_days
                     }
             else:
                 cursor.execute("""
-                    SELECT telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url
+                    SELECT telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, alert_days
                     FROM user_settings WHERE user_id = ?;
                 """, (user_id,))
                 row = cursor.fetchone()
                 if row:
+                    days_raw = row["alert_days"] if "alert_days" in row.keys() else row[6]
+                    try:
+                        alert_days = json.loads(days_raw) if days_raw else list(DEFAULT_ALERT_DAYS)
+                    except Exception:
+                        alert_days = list(DEFAULT_ALERT_DAYS)
+
                     return {
                         "user_id": user_id,
                         "telegram_enabled": bool(row["telegram_enabled"]),
@@ -853,7 +913,8 @@ def get_user_settings(user_id: int) -> dict:
                         "telegram_chat_id": row["telegram_chat_id"] or "",
                         "email_alerts_enabled": bool(row["email_alerts_enabled"]),
                         "notification_email": row["notification_email"] or "",
-                        "google_sheet_url": row["google_sheet_url"] or ""
+                        "google_sheet_url": row["google_sheet_url"] or "",
+                        "alert_days": alert_days
                     }
         except Exception as e:
             print(f"⚠️ Erreur get_user_settings: {e}")
@@ -870,11 +931,13 @@ def update_user_settings(user_id: int, settings: dict) -> bool:
             em_en = bool(settings.get("email_alerts_enabled", True))
             em_mail = settings.get("notification_email", "").strip()
             sheet_url = settings.get("google_sheet_url", "").strip()
+            days_val = settings.get("alert_days", DEFAULT_ALERT_DAYS)
+            days_json = json.dumps(days_val) if isinstance(days_val, list) else str(days_val)
 
             if db_type == "postgres":
                 cursor.execute("""
-                    INSERT INTO user_settings (user_id, telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    INSERT INTO user_settings (user_id, telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, alert_days, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                     ON CONFLICT (user_id) DO UPDATE SET
                         telegram_enabled = EXCLUDED.telegram_enabled,
                         telegram_bot_token = EXCLUDED.telegram_bot_token,
@@ -882,12 +945,13 @@ def update_user_settings(user_id: int, settings: dict) -> bool:
                         email_alerts_enabled = EXCLUDED.email_alerts_enabled,
                         notification_email = EXCLUDED.notification_email,
                         google_sheet_url = EXCLUDED.google_sheet_url,
+                        alert_days = EXCLUDED.alert_days,
                         updated_at = CURRENT_TIMESTAMP;
-                """, (user_id, tg_en, tg_tok, tg_chat, em_en, em_mail, sheet_url))
+                """, (user_id, tg_en, tg_tok, tg_chat, em_en, em_mail, sheet_url, days_json))
             else:
                 cursor.execute("""
-                    INSERT INTO user_settings (user_id, telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    INSERT INTO user_settings (user_id, telegram_enabled, telegram_bot_token, telegram_chat_id, email_alerts_enabled, notification_email, google_sheet_url, alert_days, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(user_id) DO UPDATE SET
                         telegram_enabled = excluded.telegram_enabled,
                         telegram_bot_token = excluded.telegram_bot_token,
@@ -895,8 +959,9 @@ def update_user_settings(user_id: int, settings: dict) -> bool:
                         email_alerts_enabled = excluded.email_alerts_enabled,
                         notification_email = excluded.notification_email,
                         google_sheet_url = excluded.google_sheet_url,
+                        alert_days = excluded.alert_days,
                         updated_at = CURRENT_TIMESTAMP;
-                """, (user_id, int(tg_en), tg_tok, tg_chat, int(em_en), em_mail, sheet_url))
+                """, (user_id, int(tg_en), tg_tok, tg_chat, int(em_en), em_mail, sheet_url, days_json))
             conn.commit()
             return True
         except Exception as e:
@@ -1281,13 +1346,20 @@ def get_all_active_users_for_alert() -> list[dict]:
                         u.id, u.email, u.name,
                         s.telegram_enabled, s.telegram_bot_token, s.telegram_chat_id,
                         s.email_alerts_enabled, s.notification_email, s.google_sheet_url,
-                        p.target_profiles, p.target_grades, p.keywords, p.education_level
+                        p.target_profiles, p.target_grades, p.keywords, p.education_level,
+                        s.alert_days
                     FROM users u
                     LEFT JOIN user_settings s ON u.id = s.user_id
                     LEFT JOIN user_preferences p ON u.id = p.user_id
                     WHERE s.telegram_enabled = TRUE OR s.email_alerts_enabled = TRUE;
                 """)
                 for r in cursor.fetchall():
+                    days_raw = r[13]
+                    try:
+                        alert_days = json.loads(days_raw) if days_raw else list(DEFAULT_ALERT_DAYS)
+                    except Exception:
+                        alert_days = list(DEFAULT_ALERT_DAYS)
+
                     users_list.append({
                         "id": r[0], "email": r[1], "name": r[2],
                         "telegram_enabled": bool(r[3]), "telegram_bot_token": r[4] or "", "telegram_chat_id": r[5] or "",
@@ -1295,7 +1367,38 @@ def get_all_active_users_for_alert() -> list[dict]:
                         "target_profiles": json.loads(r[9]) if r[9] else [],
                         "target_grades": json.loads(r[10]) if r[10] else [],
                         "keywords": json.loads(r[11]) if r[11] else [],
-                        "education_level": r[12] or ""
+                        "education_level": r[12] or "",
+                        "alert_days": alert_days
+                    })
+            else:
+                cursor.execute("""
+                    SELECT 
+                        u.id, u.email, u.name,
+                        s.telegram_enabled, s.telegram_bot_token, s.telegram_chat_id,
+                        s.email_alerts_enabled, s.notification_email, s.google_sheet_url,
+                        p.target_profiles, p.target_grades, p.keywords, p.education_level,
+                        s.alert_days
+                    FROM users u
+                    LEFT JOIN user_settings s ON u.id = s.user_id
+                    LEFT JOIN user_preferences p ON u.id = p.user_id
+                    WHERE s.telegram_enabled = 1 OR s.email_alerts_enabled = 1;
+                """)
+                for r in cursor.fetchall():
+                    days_raw = r[13]
+                    try:
+                        alert_days = json.loads(days_raw) if days_raw else list(DEFAULT_ALERT_DAYS)
+                    except Exception:
+                        alert_days = list(DEFAULT_ALERT_DAYS)
+
+                    users_list.append({
+                        "id": r[0], "email": r[1], "name": r[2],
+                        "telegram_enabled": bool(r[3]), "telegram_bot_token": r[4] or "", "telegram_chat_id": r[5] or "",
+                        "email_alerts_enabled": bool(r[6]), "notification_email": r[7] or r[1], "google_sheet_url": r[8] or "",
+                        "target_profiles": json.loads(r[9]) if r[9] else [],
+                        "target_grades": json.loads(r[10]) if r[10] else [],
+                        "keywords": json.loads(r[11]) if r[11] else [],
+                        "education_level": r[12] or "",
+                        "alert_days": alert_days
                     })
         except Exception as e:
             print(f"⚠️ Erreur get_all_active_users_for_alert: {e}")

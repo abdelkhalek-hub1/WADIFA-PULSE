@@ -105,3 +105,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 HISTORY_FILE = os.path.join(BASE_DIR, "seen_jobs.json")
 EXCEL_OUTPUT = os.path.join(BASE_DIR, "concours_actifs.xlsx")
 HTML_OUTPUT = os.path.join(BASE_DIR, "concours_actifs.html")
+
+# ==========================================
+# 6. Sécurité & Cron Webhook
+# ==========================================
+CRON_SECRET = os.getenv("CRON_SECRET", "WadifaPulseCron2026")

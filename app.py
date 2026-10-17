@@ -371,8 +371,51 @@ def api_telegram_webhook():
     """Point d'entrée du Webhook officiel Telegram."""
     update = request.get_json(silent=True) or {}
     if update:
-        process_telegram_update(update)
+        try:
+            process_telegram_update(update)
+        except Exception as e:
+            print(f"⚠️ Webhook processing error: {e}")
     return jsonify({"ok": True})
+
+_cron_lock = threading.Lock()
+_is_cron_running = False
+
+@app.route("/api/cron/run", methods=["GET", "POST"])
+def api_trigger_cron():
+    """Point d'entrée du Cron autonome (appelable par cron-job.org ou manuellement)."""
+    global _is_cron_running
+    key = request.args.get("key") or request.headers.get("X-Cron-Key") or (request.get_json(silent=True) or {}).get("key")
+    configured_key = getattr(config, "CRON_SECRET", "WadifaPulseCron2026") or "WadifaPulseCron2026"
+
+    if not key or key.strip() != configured_key.strip():
+        return jsonify({"success": False, "message": "Accès refusé : Clé de déclenchement cron non valide."}), 403
+
+    if _is_cron_running:
+        return jsonify({"success": True, "message": "Le pipeline de veille et diffusion est déjà en cours."}), 200
+
+    from main import main as execute_daily_pipeline
+
+    def background_task():
+        global _is_cron_running
+        with _cron_lock:
+            _is_cron_running = True
+            try:
+                print("🚀 [CRON TRIGGER] Lancement du pipeline de veille en tâche de fond...")
+                execute_daily_pipeline()
+                print("✅ [CRON TRIGGER] Pipeline de veille achevé avec succès.")
+            except Exception as e:
+                print(f"❌ [CRON TRIGGER] Erreur pendant l'exécution : {e}")
+            finally:
+                _is_cron_running = False
+
+    t = threading.Thread(target=background_task, daemon=True)
+    t.start()
+
+    return jsonify({
+        "success": True,
+        "message": "Pipeline de veille et diffusion lancé avec succès en tâche de fond.",
+        "status": "running"
+    }), 200
 
 @app.route("/api/user/telegram/link-init", methods=["POST"])
 @login_required

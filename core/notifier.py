@@ -9,8 +9,19 @@ import json
 import html
 import re
 import os
+import time
 from datetime import date
 from . import config
+
+WEEKDAY_FR_MAP = {
+    0: "lundi",
+    1: "mardi",
+    2: "mercredi",
+    3: "jeudi",
+    4: "vendredi",
+    5: "samedi",
+    6: "dimanche"
+}
 
 def safe_url(url: str) -> str:
     """Encode proprement les caractères arabes ou spéciaux dans l'URL pour Telegram."""
@@ -467,15 +478,26 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
         print("[INFO] Aucun utilisateur avec alertes actives trouvé.")
         return summary
 
-    today_str = date.today().strftime("%d/%m/%Y")
+    today_dt = date.today()
+    today_str = today_dt.strftime("%d/%m/%Y")
+    today_day_fr = WEEKDAY_FR_MAP.get(today_dt.weekday(), "lundi")
 
     for u in users:
+        # 1. Vérification des jours de réception configurés par l'utilisateur
+        user_days = [d.lower().strip() for d in u.get("alert_days", []) if d.strip()]
+        if user_days and today_day_fr not in user_days:
+            continue
+
         user_jobs = filter_jobs_for_user_prefs(jobs, u)
+        if not user_jobs:
+            # Ne pas envoyer de message vide s'il n'y a pas d'offres pertinentes aujourd'hui
+            continue
+
         user_name = u.get("name") or "Candidat"
         user_email = u.get("notification_email") or u.get("email")
         target_sheet = safe_url(u.get("google_sheet_url") or config.SPREADSHEET_URL)
 
-        # 1. Alerte Telegram personnalisée
+        # 2. Alerte Telegram personnalisée
         if u.get("telegram_enabled") and u.get("telegram_chat_id"):
             lines = [
                 f"📢 <b>Wadifa Pulse — Alertes Personnalisées</b>",
@@ -504,10 +526,11 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
             )
             if tg_ok:
                 summary["telegram_sent"] += 1
+                time.sleep(0.04) # Smooth rate-limiting (25 msg/sec) pour supporter des milliers d'utilisateurs
             else:
                 summary["errors"].append(f"Telegram {u['email']}: {tg_err}")
 
-        # 2. Alerte Email personnalisée
+        # 3. Alerte Email personnalisée
         if u.get("email_alerts_enabled") and user_email:
             rows_html = ""
             for j in user_jobs:

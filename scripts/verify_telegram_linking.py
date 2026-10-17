@@ -126,9 +126,25 @@ def test_api_endpoints():
     print("\n=== TEST 3: HTTP API Endpoints ===")
     client = app.test_client()
 
+    api_uid = 88889
+    with get_db() as (conn, db_type):
+        cur = conn.cursor()
+        if db_type == "postgres":
+            cur.execute("""
+                INSERT INTO users (id, email, password_hash, name, is_verified)
+                VALUES (%s, 'test_api@example.com', 'hash', 'API Tester', TRUE)
+                ON CONFLICT (id) DO NOTHING;
+            """, (api_uid,))
+        else:
+            cur.execute("""
+                INSERT OR IGNORE INTO users (id, email, password_hash, name, is_verified)
+                VALUES (?, 'test_api@example.com', 'hash', 'API Tester', 1);
+            """, (api_uid,))
+        conn.commit()
+
     # Create session mock
     with client.session_transaction() as sess:
-        sess["user"] = {"id": 1, "email": "test@example.com", "name": "Tester"}
+        sess["user"] = {"id": api_uid, "email": "test_api@example.com", "name": "API Tester"}
 
     # Test link-init
     res = client.post("/api/user/telegram/link-init")
@@ -168,6 +184,15 @@ def test_api_endpoints():
     print("link-status after start:", data_after)
     assert data_after["connected"] == True
     assert data_after["chat_id"] == "12345678"
+
+    # Cleanup API test user
+    with get_db() as (conn, db_type):
+        cur = conn.cursor()
+        p = "%s" if db_type == "postgres" else "?"
+        cur.execute(f"DELETE FROM telegram_link_tokens WHERE user_id = {p};", (api_uid,))
+        cur.execute(f"DELETE FROM user_settings WHERE user_id = {p};", (api_uid,))
+        cur.execute(f"DELETE FROM users WHERE id = {p};", (api_uid,))
+        conn.commit()
 
     print("✅ All HTTP API endpoints verified successfully!")
 
