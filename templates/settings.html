@@ -164,11 +164,30 @@
 
                     <!-- Predefined Profiles Selection -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
-                            Filières Prédéfinies (Cliquer pour activer)
-                        </label>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Filières Prédéfinies & Personnalisées
+                            </label>
+                            <span class="text-[11px] text-slate-400">Tous secteurs marocains</span>
+                        </div>
                         <div class="flex flex-wrap gap-2" id="presetProfilesContainer">
                             <!-- Injected dynamically via JS -->
+                        </div>
+
+                        <!-- Custom Profile Input -->
+                        <div class="mt-3.5 flex items-center space-x-2">
+                            <div class="relative flex-1">
+                                <i class="ph-bold ph-plus-circle absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                                <input type="text" id="customProfileInput" 
+                                    placeholder="Ajouter une autre filière (ex: Agronomie, Biologie, Tourisme, Pêche maritime...)"
+                                    class="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-slate-400 transition"
+                                    onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addCustomProfile(); }">
+                            </div>
+                            <button type="button" onclick="addCustomProfile()"
+                                class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 active:scale-98 transition shadow-2xs space-x-1.5 flex-shrink-0">
+                                <i class="ph-bold ph-plus text-xs"></i>
+                                <span>Ajouter</span>
+                            </button>
                         </div>
                     </div>
 
@@ -224,53 +243,61 @@
                         <p class="text-xs text-slate-500 mt-0.5">Recevez chaque matin à 08:00 (GMT+1) vos concours directement sur votre téléphone.</p>
                     </div>
 
-                    <!-- Telegram Card -->
-                    <div class="rounded-xl border border-slate-200 p-5 space-y-4 bg-slate-50/50">
+                    <!-- Telegram Sovereign Card -->
+                    <div class="rounded-xl border border-slate-200 p-5 space-y-4 bg-slate-50/50" id="telegramCard">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
-                                <div class="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
-                                    <i class="ph-bold ph-telegram-logo text-xl"></i>
+                                <div class="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
+                                    <i class="ph-bold ph-telegram-logo text-2xl"></i>
                                 </div>
                                 <div>
-                                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Alertes Telegram</h3>
-                                    <p class="text-[11px] text-slate-500">Notifications instantanées avec liens directs</p>
+                                    <div class="flex items-center space-x-2">
+                                        <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Alertes Telegram Instantanées</h3>
+                                        <span class="text-[10px] text-sky-700 bg-sky-100/70 border border-sky-200 px-2 py-0.5 rounded-full font-mono font-semibold">@WadifaPulse_bot</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500">Notifications prioritaires chaque matin à 08:00 (GMT+1)</p>
                                 </div>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="telegramEnabled" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700"></div>
-                            </label>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                            <div>
-                                <label for="telegramChatId" class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                                    Votre Telegram Chat ID
-                                </label>
-                                <input type="text" id="telegramChatId" placeholder="ex: 5022471884"
-                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-400 transition">
-                                <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-                                    1. Obtenez votre ID via <a href="https://t.me/userinfobot" target="_blank" class="text-sky-600 underline font-semibold">@userinfobot</a> (ou @idbot).<br>
-                                    2. Ouvrez notre bot <a href="https://t.me/WadifaBbot" target="_blank" class="text-emerald-700 underline font-bold">@WadifaBbot</a> et cliquez sur <b>Démarrer (/start)</b>.
-                                </p>
-                            </div>
-
-                            <div>
-                                <label for="telegramBotToken" class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                                    Bot Token (Optionnel)
-                                </label>
-                                <input type="password" id="telegramBotToken" placeholder="Laisser vide pour utiliser le bot officiel"
-                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-400 transition">
-                                <p class="text-[10px] text-slate-400 mt-1">Par défaut : Bot officiel Wadifa Pulse</p>
+                            <div id="telegramStatusBadge">
+                                <!-- Injected dynamically: Connected badge or Not Connected -->
                             </div>
                         </div>
 
-                        <div class="pt-2 flex justify-end">
-                            <button onclick="testTelegram()" type="button" 
-                                class="inline-flex items-center px-3 py-1.5 rounded-lg border border-sky-300 text-xs font-semibold text-sky-800 bg-sky-50 hover:bg-sky-100 transition shadow-xs">
-                                <i class="ph-bold ph-paper-plane-tilt mr-1.5 text-xs"></i>
-                                <span>Envoyer un message test sur mon Telegram</span>
+                        <!-- Main 1-Click Connection Section -->
+                        <div id="telegramConnectSection" class="p-4 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-3">
+                            <!-- Injected dynamically based on connection status -->
+                        </div>
+
+                        <!-- Hidden fields for form compatibility -->
+                        <input type="checkbox" id="telegramEnabled" class="sr-only">
+
+                        <!-- Collapsible Advanced Config (Manual Chat ID / Custom Bot) -->
+                        <div class="pt-1">
+                            <button type="button" onclick="toggleManualTelegramConfig()" 
+                                class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center space-x-1.5 transition">
+                                <i class="ph-bold ph-sliders text-xs"></i>
+                                <span id="manualConfigToggleText">Configuration manuelle avancée (Chat ID / Bot privé)</span>
+                                <i class="ph-bold ph-caret-down text-[10px] ml-0.5 transition-transform" id="manualConfigCaret"></i>
                             </button>
+
+                            <div id="manualTelegramConfig" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 mt-2 border-t border-slate-200/60">
+                                <div>
+                                    <label for="telegramChatId" class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                                        Votre Telegram Chat ID
+                                    </label>
+                                    <input type="text" id="telegramChatId" placeholder="ex: 8938907799"
+                                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-400 transition">
+                                    <p class="text-[10px] text-slate-400 mt-1">Saisie manuelle si nécessaire</p>
+                                </div>
+                                <div>
+                                    <label for="telegramBotToken" class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                                        Bot Token Privé (Optionnel)
+                                    </label>
+                                    <input type="password" id="telegramBotToken" placeholder="Laisser vide pour utiliser le bot officiel"
+                                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-400 transition">
+                                    <p class="text-[10px] text-slate-400 mt-1">Par défaut : Bot officiel @WadifaPulse_bot</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -390,14 +417,15 @@
     <script>
         const PRESET_PROFILES = [
             "Développement Digital Web Full Stack",
-            "Réseaux & Cybersécurité",
-            "Systèmes d'Information & Bases de Données",
+            "Systèmes, Réseaux & Cybersécurité",
+            "Agriculture, Eaux & Forêts & Halieutique",
+            "Santé, Sciences Infirmières & Biologie",
+            "Génie Civil, BTP & Topographie",
             "Gestion des Entreprises & Comptabilité",
-            "Génie Civil & Bâtiment",
-            "Ressources Humaines & Management",
-            "Santé & Sciences Infirmières",
             "Droit & Sciences Juridiques",
-            "Électromécanique & Maintenance"
+            "Électromécanique, Électricité & Maintenance",
+            "Ressources Humaines & Management",
+            "Éducation, Enseignement & Langues"
         ];
 
         const PRESET_GRADES = [
@@ -426,11 +454,18 @@
             google_sheet_url: ""
         };
 
+        let telegramPollInterval = null;
+        let currentLinkToken = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             renderPresets();
             await loadPreferences();
             await loadSettings();
         });
+
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        }
 
         function switchTab(tab) {
             document.getElementById('panelTarget').classList.add('hidden');
@@ -455,13 +490,26 @@
 
         function renderPresets() {
             const container = document.getElementById('presetProfilesContainer');
-            container.innerHTML = PRESET_PROFILES.map(p => `
-                <button type="button" onclick="toggleProfile('${p}')" id="prof_${slugify(p)}"
-                    class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100">
-                    <i class="ph-bold ph-plus text-xs"></i>
-                    <span>${p}</span>
-                </button>
-            `).join('');
+            const allProfiles = [...new Set([...PRESET_PROFILES, ...(currentPreferences.target_profiles || [])])];
+
+            container.innerHTML = allProfiles.map(p => {
+                const isCustom = !PRESET_PROFILES.includes(p);
+                const isSelected = (currentPreferences.target_profiles || []).includes(p);
+                const slug = slugify(p);
+                return `
+                    <div class="inline-flex items-center rounded-lg border text-xs font-semibold transition overflow-hidden shadow-2xs ${isSelected ? 'bg-emerald-800 text-white border-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}">
+                        <button type="button" onclick="toggleProfile('${p.replace(/'/g, "\\'")}')" id="prof_${slug}" class="px-3 py-1.5 flex items-center space-x-1.5">
+                            <i class="ph-bold ${isSelected ? 'ph-check text-white' : 'ph-plus'} text-xs"></i>
+                            <span>${p}</span>
+                        </button>
+                        ${isCustom ? `
+                            <button type="button" onclick="removeCustomProfile('${p.replace(/'/g, "\\'")}')" title="Supprimer cette filière" class="px-2 py-1.5 hover:bg-black/15 transition border-l border-white/20">
+                                <i class="ph-bold ph-x text-[10px]"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
 
             const gradesContainer = document.getElementById('gradesContainer');
             gradesContainer.innerHTML = PRESET_GRADES.map(g => `
@@ -484,7 +532,30 @@
             } else {
                 currentPreferences.target_profiles.push(p);
             }
-            updateProfileButtons();
+            renderPresets();
+        }
+
+        function addCustomProfile() {
+            const input = document.getElementById('customProfileInput');
+            const val = input.value.trim();
+            if (!val) return;
+            if (!currentPreferences.target_profiles.includes(val)) {
+                currentPreferences.target_profiles.push(val);
+                input.value = '';
+                renderPresets();
+                showToast(`Filière "${val}" ajoutée aux critères`, "emerald", "ph-check");
+            } else {
+                showToast("Cette filière est déjà sélectionnée", "amber", "ph-info");
+            }
+        }
+
+        function removeCustomProfile(p) {
+            const idx = currentPreferences.target_profiles.indexOf(p);
+            if (idx > -1) {
+                currentPreferences.target_profiles.splice(idx, 1);
+                renderPresets();
+                showToast(`Filière "${p}" retirée`, "slate", "ph-trash");
+            }
         }
 
         function toggleGrade(g) {
@@ -494,21 +565,6 @@
             } else {
                 currentPreferences.target_grades.push(g);
             }
-        }
-
-        function updateProfileButtons() {
-            PRESET_PROFILES.forEach(p => {
-                const btn = document.getElementById(`prof_${slugify(p)}`);
-                if (!btn) return;
-                const isSelected = currentPreferences.target_profiles.includes(p);
-                if (isSelected) {
-                    btn.className = "px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center space-x-1.5 bg-emerald-800 text-white border-emerald-900 shadow-xs";
-                    btn.querySelector('i').className = "ph-bold ph-check text-xs text-white";
-                } else {
-                    btn.className = "px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center space-x-1.5 bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100";
-                    btn.querySelector('i').className = "ph-bold ph-plus text-xs";
-                }
-            });
         }
 
         async function loadPreferences() {
@@ -581,9 +637,223 @@
                     document.getElementById('emailEnabled').checked = Boolean(data.email_alerts_enabled);
                     document.getElementById('notificationEmail').value = data.notification_email || "{{ user.email }}";
                     document.getElementById('googleSheetUrl').value = data.google_sheet_url || "";
+                    renderTelegramSection();
                 }
             } catch (err) {
                 console.error("Erreur chargement settings:", err);
+            }
+        }
+
+        function renderTelegramSection() {
+            const badgeContainer = document.getElementById('telegramStatusBadge');
+            const connectSection = document.getElementById('telegramConnectSection');
+            const chatId = (currentSettings.telegram_chat_id || "").trim();
+            const isConnected = Boolean(chatId);
+
+            document.getElementById('telegramEnabled').checked = isConnected;
+
+            if (isConnected) {
+                badgeContainer.innerHTML = `
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                        Connecté
+                    </span>
+                `;
+
+                connectSection.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-0.5">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-slate-900">Compte Telegram relié avec succès</span>
+                                <i class="ph-fill ph-check-circle text-emerald-600 text-sm"></i>
+                            </div>
+                            <p class="text-xs text-slate-500 font-mono">
+                                Chat ID actif : <strong class="text-slate-800">${chatId}</strong>
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <button type="button" onclick="testTelegram()"
+                                class="inline-flex items-center px-3 py-1.5 rounded-lg border border-sky-300 text-xs font-semibold text-sky-800 bg-sky-50 hover:bg-sky-100 transition shadow-2xs space-x-1.5">
+                                <i class="ph-bold ph-paper-plane-tilt text-xs"></i>
+                                <span>Envoyer test</span>
+                            </button>
+                            <button type="button" onclick="disconnectTelegram()"
+                                class="inline-flex items-center px-3 py-1.5 rounded-lg border border-rose-200 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 transition shadow-2xs space-x-1.5">
+                                <i class="ph-bold ph-plugs text-xs"></i>
+                                <span>Dissocier</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                badgeContainer.innerHTML = `
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+                        Non connecté
+                    </span>
+                `;
+
+                connectSection.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <h4 class="text-xs font-bold text-slate-900">Liez votre compte en 1 Clic (Sans copier aucun numéro)</h4>
+                            <p class="text-xs text-slate-500 leading-relaxed max-w-lg">
+                                Ouvrez directement notre bot officiel <strong class="text-sky-700">@WadifaPulse_bot</strong> ou scannez le QR code pour être alerté chaque matin à 08:00.
+                            </p>
+                        </div>
+                        <button type="button" onclick="openTelegramModal()"
+                            class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 active:scale-98 transition shadow-xs space-x-2 flex-shrink-0">
+                            <i class="ph-bold ph-telegram-logo text-base"></i>
+                            <span>Connecter mon Telegram</span>
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleManualTelegramConfig() {
+            const panel = document.getElementById('manualTelegramConfig');
+            const caret = document.getElementById('manualConfigCaret');
+            const isHidden = panel.classList.contains('hidden');
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                caret.classList.add('rotate-180');
+            } else {
+                panel.classList.add('hidden');
+                caret.classList.remove('rotate-180');
+            }
+        }
+
+        async function openTelegramModal() {
+            const modal = document.getElementById('telegramModal');
+            const content = document.getElementById('telegramModalContent');
+            const indicator = document.getElementById('telegramPollingIndicator');
+            const celebration = document.getElementById('telegramSuccessCelebration');
+
+            indicator.classList.remove('hidden');
+            celebration.classList.add('hidden');
+            content.classList.remove('hidden');
+            modal.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/user/telegram/link-init', { method: 'POST' });
+                if (res.redirected || res.status === 401 || res.status === 403) {
+                    showToast("Votre session a expiré. Veuillez vous reconnecter.", "amber", "ph-warning");
+                    setTimeout(() => window.location.href = '/login', 1200);
+                    return;
+                }
+                const data = await res.json();
+                if (!data.success) {
+                    showToast("Impossible d'initialiser la liaison Telegram", "rose", "ph-warning");
+                    closeTelegramModal();
+                    return;
+                }
+
+                currentLinkToken = data.token;
+                const deepLink = data.deep_link;
+                const tgLink = data.tg_link;
+                const isMobile = isMobileDevice();
+
+                if (isMobile) {
+                    content.innerHTML = `
+                        <div class="text-center py-2 space-y-4">
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Appuyez sur le bouton ci-dessous pour ouvrir Telegram. Une fois dans l'application, appuyez simplement sur <strong class="text-slate-900">"Démarrer" (Start)</strong> au bas de l'écran.
+                            </p>
+                            <a href="${deepLink}" target="_blank"
+                                class="inline-flex items-center justify-center w-full px-5 py-3 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 active:scale-98 transition shadow-xs space-x-2">
+                                <i class="ph-bold ph-paper-plane-tilt text-base"></i>
+                                <span>Ouvrir Telegram & Activer</span>
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(deepLink);
+                    content.innerHTML = `
+                        <div class="space-y-4 text-center">
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 inline-block mx-auto shadow-2xs">
+                                <img src="${qrUrl}" alt="QR Code Telegram" class="w-40 h-40 rounded-lg mx-auto">
+                            </div>
+                            <p class="text-xs text-slate-600">
+                                📱 <strong>Scannez ce QR Code</strong> avec l'appareil photo de votre téléphone pour ouvrir le bot et appuyer sur <strong>Démarrer (Start)</strong>.
+                            </p>
+                            <div class="relative flex items-center justify-center my-1">
+                                <div class="border-t border-slate-200 w-full"></div>
+                                <span class="bg-white px-2 text-[10px] uppercase font-bold text-slate-400 absolute">OU</span>
+                            </div>
+                            <a href="${deepLink}" target="_blank"
+                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-semibold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition space-x-1.5">
+                                <i class="ph-bold ph-laptop text-xs"></i>
+                                <span>Ouvrir dans Telegram Desktop / Web</span>
+                            </a>
+                        </div>
+                    `;
+                }
+
+                startTelegramPolling(currentLinkToken);
+            } catch (e) {
+                showToast("Erreur lors de la préparation de la liaison", "rose", "ph-warning");
+                closeTelegramModal();
+            }
+        }
+
+        function startTelegramPolling(token) {
+            if (telegramPollInterval) clearInterval(telegramPollInterval);
+            telegramPollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/user/telegram/link-status?token=' + encodeURIComponent(token));
+                    const data = await res.json();
+                    if (data.success && data.connected) {
+                        clearInterval(telegramPollInterval);
+                        telegramPollInterval = null;
+
+                        document.getElementById('telegramPollingIndicator').classList.add('hidden');
+                        document.getElementById('telegramModalContent').classList.add('hidden');
+                        document.getElementById('telegramSuccessCelebration').classList.remove('hidden');
+
+                        currentSettings.telegram_enabled = true;
+                        currentSettings.telegram_chat_id = data.chat_id;
+                        document.getElementById('telegramChatId').value = data.chat_id;
+
+                        setTimeout(() => {
+                            closeTelegramModal();
+                            renderTelegramSection();
+                            showToast("🎉 Telegram connecté avec succès !", "emerald", "ph-check-circle");
+                        }, 1300);
+                    }
+                } catch (e) {
+                    console.error("Polling error:", e);
+                }
+            }, 2000);
+        }
+
+        function closeTelegramModal() {
+            if (telegramPollInterval) {
+                clearInterval(telegramPollInterval);
+                telegramPollInterval = null;
+            }
+            document.getElementById('telegramModal').classList.add('hidden');
+            document.getElementById('telegramModalContent').classList.remove('hidden');
+            document.getElementById('telegramPollingIndicator').classList.remove('hidden');
+            document.getElementById('telegramSuccessCelebration').classList.add('hidden');
+        }
+
+        async function disconnectTelegram() {
+            if (!confirm("Voulez-vous vraiment dissocier vos alertes Telegram ?")) return;
+            try {
+                const res = await fetch('/api/user/telegram/disconnect', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    currentSettings.telegram_enabled = false;
+                    currentSettings.telegram_chat_id = "";
+                    document.getElementById('telegramChatId').value = "";
+                    renderTelegramSection();
+                    showToast("Compte Telegram dissocié.", "slate", "ph-check");
+                } else {
+                    showToast("Erreur lors de la dissociation", "rose", "ph-warning");
+                }
+            } catch (e) {
+                showToast("Erreur de communication", "rose", "ph-warning");
             }
         }
 
@@ -594,8 +864,8 @@
             btnText.innerText = "Enregistrement...";
 
             const payload = {
-                telegram_enabled: document.getElementById('telegramEnabled').checked,
-                telegram_chat_id: document.getElementById('telegramChatId').value.trim(),
+                telegram_enabled: Boolean(currentSettings.telegram_chat_id || document.getElementById('telegramChatId').value.trim()),
+                telegram_chat_id: (document.getElementById('telegramChatId').value.trim() || currentSettings.telegram_chat_id || ""),
                 telegram_bot_token: document.getElementById('telegramBotToken').value.trim(),
                 email_alerts_enabled: document.getElementById('emailEnabled').checked,
                 notification_email: document.getElementById('notificationEmail').value.trim(),
@@ -617,6 +887,9 @@
 
                 const data = await res.json();
                 if (data.success) {
+                    currentSettings.telegram_chat_id = payload.telegram_chat_id;
+                    currentSettings.telegram_enabled = payload.telegram_enabled;
+                    renderTelegramSection();
                     showToast("Canaux de notification mis à jour !", "emerald", "ph-check-circle");
                 } else {
                     showToast(data.message || "Erreur lors de la sauvegarde", "rose", "ph-warning-circle");
@@ -630,10 +903,10 @@
         }
 
         async function testTelegram() {
-            const chatId = document.getElementById('telegramChatId').value.trim();
+            const chatId = document.getElementById('telegramChatId').value.trim() || currentSettings.telegram_chat_id;
             const botToken = document.getElementById('telegramBotToken').value.trim();
             if (!chatId) {
-                showToast("Veuillez d'abord saisir votre Telegram Chat ID", "amber", "ph-warning");
+                showToast("Veuillez d'abord connecter votre Telegram ou saisir un Chat ID", "amber", "ph-warning");
                 return;
             }
 
@@ -748,5 +1021,57 @@
             }, 4000);
         }
     </script>
+
+    <!-- Modal Telegram 1-Click Connection -->
+    <div id="telegramModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
+                        <i class="ph-bold ph-telegram-logo text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Connexion Telegram en 1 Clic</h3>
+                        <p class="text-[11px] text-slate-500">Liaison instantanée sans Chat ID</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeTelegramModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition flex items-center justify-center">
+                    <i class="ph-bold ph-x text-base"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <!-- Dynamic Content (Mobile button or Desktop QR) -->
+                <div id="telegramModalContent" class="space-y-4">
+                    <div class="py-8 text-center text-slate-400">
+                        <i class="ph-bold ph-spinner animate-spin text-2xl mb-2"></i>
+                        <p class="text-xs">Génération du lien sécurisé...</p>
+                    </div>
+                </div>
+
+                <!-- Live Polling Indicator -->
+                <div id="telegramPollingIndicator" class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-center space-x-2 text-xs text-slate-500">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+                    </span>
+                    <span>En attente de votre clic sur <strong>Démarrer (Start)</strong>...</span>
+                </div>
+
+                <!-- Success Celebration -->
+                <div id="telegramSuccessCelebration" class="hidden py-6 text-center space-y-3">
+                    <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                        <i class="ph-bold ph-check text-3xl"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-base font-bold text-slate-900">Telegram connecté avec succès ! 🎉</h4>
+                        <p class="text-xs text-slate-600">Votre compte recevra désormais chaque matin les nouvelles alertes de concours.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

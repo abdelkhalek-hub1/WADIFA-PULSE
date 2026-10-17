@@ -34,6 +34,12 @@ from core import (
     dispatch_all_user_alerts,
     verify_user_otp,
     resend_user_otp,
+    create_telegram_link_token,
+    get_telegram_link_status,
+    consume_telegram_link_token,
+    disconnect_user_telegram,
+    process_telegram_update,
+    check_telegram_updates_for_token,
 )
 
 app = Flask(__name__, template_folder="templates")
@@ -359,6 +365,63 @@ def api_test_telegram():
 
     ok, err_msg = send_telegram_direct(chat_id=chat_id, bot_token=bot_token, message=test_message)
     return jsonify({"success": ok, "message": err_msg})
+
+@app.route("/api/telegram/webhook", methods=["POST"])
+def api_telegram_webhook():
+    """Point d'entrée du Webhook officiel Telegram."""
+    update = request.get_json(silent=True) or {}
+    if update:
+        process_telegram_update(update)
+    return jsonify({"ok": True})
+
+@app.route("/api/user/telegram/link-init", methods=["POST"])
+@login_required
+def api_telegram_link_init():
+    """Initialise une session de liaison Telegram 1-Clic et génère le deep-link."""
+    user = session.get("user")
+    user_id = user["id"]
+    token = create_telegram_link_token(user_id)
+    bot_username = config.TELEGRAM_BOT_USERNAME or "WadifaPulse_bot"
+    deep_link = f"https://t.me/{bot_username}?start=wp_{token}"
+    tg_link = f"tg://resolve?domain={bot_username}&start=wp_{token}"
+    return jsonify({
+        "success": True,
+        "token": token,
+        "bot_username": bot_username,
+        "deep_link": deep_link,
+        "tg_link": tg_link
+    })
+
+@app.route("/api/user/telegram/link-status", methods=["GET"])
+@login_required
+def api_telegram_link_status():
+    """Vérifie si le deep-link Telegram a été validé et renvoie l'état."""
+    token = request.args.get("token", "").strip()
+    if not token:
+        return jsonify({"success": False, "connected": False}), 400
+
+    st = get_telegram_link_status(token)
+    if not st.get("connected"):
+        # Fallback pour le développement local ou si le webhook n'a pas encore répondu
+        if check_telegram_updates_for_token(token):
+            st = get_telegram_link_status(token)
+
+    return jsonify({
+        "success": True,
+        "connected": st.get("connected", False),
+        "chat_id": st.get("chat_id", ""),
+        "user_name": st.get("user_name", "")
+    })
+
+@app.route("/api/user/telegram/disconnect", methods=["POST"])
+@login_required
+def api_telegram_disconnect():
+    """Dissocie le compte Telegram de l'utilisateur."""
+    user = session.get("user")
+    user_id = user["id"]
+    ok = disconnect_user_telegram(user_id)
+    return jsonify({"success": ok, "message": "Compte Telegram dissocié avec succès." if ok else "Erreur lors de la dissociation."})
+
 
 @app.route("/api/user/test/email", methods=["POST"])
 @login_required

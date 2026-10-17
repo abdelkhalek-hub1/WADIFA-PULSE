@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+import secrets
 import threading
 from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -900,6 +901,140 @@ def update_user_settings(user_id: int, settings: dict) -> bool:
             return True
         except Exception as e:
             print(f"⚠️ Erreur update_user_settings: {e}")
+            return False
+
+def create_telegram_link_token(user_id: int) -> str:
+    """Génère un token éphémère sécurisé pour lier le compte Telegram de l'utilisateur."""
+    token = secrets.token_hex(16)
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        if db_type == "postgres":
+            cursor.execute("""
+                INSERT INTO telegram_link_tokens (token, user_id, is_used)
+                VALUES (%s, %s, FALSE)
+                ON CONFLICT (token) DO NOTHING;
+            """, (token, user_id))
+        else:
+            cursor.execute("""
+                INSERT OR REPLACE INTO telegram_link_tokens (token, user_id, is_used)
+                VALUES (?, ?, 0);
+            """, (token, user_id))
+        conn.commit()
+    return token
+
+def get_telegram_link_status(token: str) -> dict:
+    """Vérifie si un token a été consommé et renvoie l'état de liaison."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        if db_type == "postgres":
+            cursor.execute("""
+                SELECT t.user_id, t.is_used, s.telegram_chat_id, u.name
+                FROM telegram_link_tokens t
+                LEFT JOIN users u ON t.user_id = u.id
+                LEFT JOIN user_settings s ON t.user_id = s.user_id
+                WHERE t.token = %s;
+            """, (token,))
+            row = cursor.fetchone()
+        else:
+            cursor.execute("""
+                SELECT t.user_id, t.is_used, s.telegram_chat_id, u.name
+                FROM telegram_link_tokens t
+                LEFT JOIN users u ON t.user_id = u.id
+                LEFT JOIN user_settings s ON t.user_id = s.user_id
+                WHERE t.token = ?;
+            """, (token,))
+            row = cursor.fetchone()
+
+        if not row:
+            return {"valid": False, "connected": False}
+        
+        user_id, is_used, chat_id, user_name = row[0], bool(row[1]), row[2], row[3]
+        return {
+            "valid": True,
+            "connected": is_used and bool(chat_id),
+            "chat_id": chat_id or "",
+            "user_name": user_name or "",
+            "user_id": user_id
+        }
+
+def consume_telegram_link_token(token: str, chat_id: str, telegram_name: str = "") -> tuple[bool, str]:
+    """Valide le token envoyé lors du /start et associe automatiquement le chat_id à l'utilisateur."""
+    token = (token or "").strip()
+    chat_id = str(chat_id or "").strip()
+    if not token or not chat_id:
+        return False, "Token ou Chat ID manquant."
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        if db_type == "postgres":
+            cursor.execute("""
+                SELECT t.user_id, t.is_used, u.name, u.email
+                FROM telegram_link_tokens t
+                LEFT JOIN users u ON t.user_id = u.id
+                WHERE t.token = %s;
+            """, (token,))
+            row = cursor.fetchone()
+        else:
+            cursor.execute("""
+                SELECT t.user_id, t.is_used, u.name, u.email
+                FROM telegram_link_tokens t
+                LEFT JOIN users u ON t.user_id = u.id
+                WHERE t.token = ?;
+            """, (token,))
+            row = cursor.fetchone()
+
+        if not row:
+            return False, "Lien d'activation invalide ou introuvable."
+
+        user_id, is_used, user_name, user_email = row[0], bool(row[1]), row[2], row[3]
+        if is_used:
+            return True, user_name or "Candidat"
+
+        if db_type == "postgres":
+            cursor.execute("UPDATE telegram_link_tokens SET is_used = TRUE WHERE token = %s;", (token,))
+            cursor.execute("""
+                INSERT INTO user_settings (user_id, telegram_enabled, telegram_chat_id, updated_at)
+                VALUES (%s, TRUE, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    telegram_enabled = TRUE,
+                    telegram_chat_id = EXCLUDED.telegram_chat_id,
+                    updated_at = CURRENT_TIMESTAMP;
+            """, (user_id, chat_id))
+        else:
+            cursor.execute("UPDATE telegram_link_tokens SET is_used = 1 WHERE token = ?;", (token,))
+            cursor.execute("""
+                INSERT INTO user_settings (user_id, telegram_enabled, telegram_chat_id, updated_at)
+                VALUES (?, 1, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    telegram_enabled = 1,
+                    telegram_chat_id = excluded.telegram_chat_id,
+                    updated_at = CURRENT_TIMESTAMP;
+            """, (user_id, chat_id))
+
+        conn.commit()
+        return True, user_name or "Candidat"
+
+def disconnect_user_telegram(user_id: int) -> bool:
+    """Désactive et dissocie le compte Telegram d'un utilisateur."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    UPDATE user_settings
+                    SET telegram_enabled = FALSE, telegram_chat_id = '', updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = %s;
+                """, (user_id,))
+            else:
+                cursor.execute("""
+                    UPDATE user_settings
+                    SET telegram_enabled = 0, telegram_chat_id = '', updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ?;
+                """, (user_id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"⚠️ Erreur disconnect_user_telegram: {e}")
             return False
 
 def get_user_preferences(user_id: int) -> dict:

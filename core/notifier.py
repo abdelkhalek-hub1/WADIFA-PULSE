@@ -386,6 +386,11 @@ BILINGUAL_PROFILE_SYNONYMS = {
     "comptabilité": ["محاسبة", "comptabilité", "comptabilite", "finance", "مالية"],
     "droit": ["قانون", "حقوق", "droit", "juridique"],
     "ressources humaines": ["موارد بشرية", "rh", "ressources humaines"],
+    "agriculture": ["فلاحة", "فلاحي", "زراعة", "زراعي", "مياه وغابات", "صيد بحري", "بيطرة", "بيطري", "إنتاج نباتي", "agronomie", "agriculture", "agroalimentaire", "halieutique", "eaux et forêts", "vétérinaire"],
+    "santé": ["صحة", "تمريض", "ممرض", "طبي", "صيدلة", "مختبر", "biologie", "santé", "infirmier", "médical", "pharmacie", "laboratoire"],
+    "génie civil": ["بناء", "أشغال عمومية", "هندسة مدنية", "طبوغرافيا", "معمار", "génie civil", "bâtiment", "travaux publics", "btp", "topographie", "architecture"],
+    "électromécanique": ["كهرباء", "ميكانيك", "صيانة", "كهروميكانيك", "طاقة", "électromécanique", "électricité", "mécanique", "maintenance", "énergie"],
+    "éducation": ["تعليم", "تربية", "تدريس", "أستاذ", "education", "enseignement", "langues", "français", "anglais"],
 }
 
 def filter_jobs_for_user_prefs(jobs: list[dict], user_prefs: dict) -> list[dict]:
@@ -625,5 +630,80 @@ def send_otp_email(recipient: str, otp_code: str, user_name: str = "") -> tuple[
     </html>
     """
     return send_email_direct(recipient=dest, subject=subject, html_body=html_content)
+
+
+def process_telegram_update(update: dict) -> tuple[bool, str]:
+    """Traite un update Telegram entrant (webhook ou polling) et relie le compte utilisateur."""
+    from .database import consume_telegram_link_token
+    message = update.get("message") or update.get("edited_message")
+    if not message:
+        return False, "Pas de message dans l'update."
+
+    text = (message.get("text") or "").strip()
+    chat = message.get("chat") or {}
+    chat_id = str(chat.get("id", "")).strip()
+    from_user = message.get("from") or {}
+    first_name = from_user.get("first_name") or "Candidat"
+
+    if not chat_id:
+        return False, "Chat ID introuvable."
+
+    # Si l'utilisateur clique sur le lien deep-link: /start wp_<token>
+    if text.startswith("/start wp_"):
+        token = text.replace("/start wp_", "").strip()
+        ok, user_name = consume_telegram_link_token(token, chat_id, first_name)
+        if ok:
+            welcome_msg = (
+                f"🎉 <b>Félicitations {html.escape(user_name)} !</b>\n\n"
+                "Votre compte Telegram est maintenant <b>connecté avec succès</b> à <b>Wadifa Pulse</b>.\n\n"
+                "Chaque matin à <b>08:00 (GMT+1)</b>, vous recevrez directement ici en avant-première tous les concours correspondant à votre profil.\n\n"
+                "🏛 <i>Wadifa Pulse · Système Autonome de Veille</i>"
+            )
+            send_telegram_direct(chat_id=chat_id, message=welcome_msg)
+            return True, f"Compte {user_name} relié avec succès."
+        else:
+            err_msg = (
+                "⚠️ <b>Lien d'activation expiré ou déjà utilisé.</b>\n\n"
+                "Veuillez retourner sur votre tableau de bord Wadifa Pulse et cliquer sur 'Connecter mon Telegram' pour générer un nouveau lien."
+            )
+            send_telegram_direct(chat_id=chat_id, message=err_msg)
+            return False, "Token invalide ou expiré."
+
+    elif text.startswith("/start"):
+        welcome_generic = (
+            f"👋 <b>Bonjour {html.escape(first_name)} !</b>\n\n"
+            "Bienvenue sur le bot officiel de <b>Wadifa Pulse</b>.\n\n"
+            "Pour activer vos alertes de concours ciblés en 1 Clic :\n"
+            "1. Rendez-vous sur votre espace : <a href=\"https://wadifapulse.up.railway.app/settings\">Paramètres Wadifa Pulse</a>\n"
+            "2. Cliquez sur <b>'Connecter mon Telegram'</b>.\n\n"
+            "🏛 <i>Wadifa Pulse · Système Autonome de Veille</i>"
+        )
+        send_telegram_direct(chat_id=chat_id, message=welcome_generic)
+        return True, "Message d'accueil envoyé."
+
+    return False, "Commande non gérée."
+
+
+def check_telegram_updates_for_token(token: str) -> bool:
+    """Interroge l'API getUpdates de Telegram pour vérifier si un /start wp_<token> a été reçu."""
+    bot_token = config.TELEGRAM_BOT_TOKEN
+    if not bot_token:
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/getUpdates?limit=25&timeout=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "WadifaPulse/2.0"})
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("ok"):
+                for upd in data.get("result", []):
+                    msg = upd.get("message") or {}
+                    text = (msg.get("text") or "").strip()
+                    if text == f"/start wp_{token}":
+                        process_telegram_update(upd)
+                        return True
+    except Exception as e:
+        print(f"⚠️ check_telegram_updates_for_token: {e}")
+    return False
+
 
 

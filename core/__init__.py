@@ -28,6 +28,10 @@ from .database import (
     update_user_account,
     verify_user_otp,
     resend_user_otp,
+    create_telegram_link_token,
+    get_telegram_link_status,
+    consume_telegram_link_token,
+    disconnect_user_telegram,
 )
 from .security import (
     is_disposable_email,
@@ -48,6 +52,8 @@ from .notifier import (
     filter_jobs_for_user_prefs,
     dispatch_all_user_alerts,
     send_otp_email,
+    process_telegram_update,
+    check_telegram_updates_for_token,
 )
 from .storage import (
     sync_all_storage,

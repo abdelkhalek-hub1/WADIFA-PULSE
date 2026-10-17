@@ -74,7 +74,8 @@ EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "")
 
 # Telegram Bot
 TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8676849779:AAHnICqMjZsfO4EL_yiDwNfqxLKtClnnjg0")
+TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "WadifaPulse_bot")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
 # WhatsApp (CallMeBot)
