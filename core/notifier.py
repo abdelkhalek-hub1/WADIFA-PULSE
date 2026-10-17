@@ -325,6 +325,8 @@ def send_telegram_direct(chat_id: str, bot_token: str = None, message: str = "")
                 return True, "Message envoyé (texte brut)."
         except Exception:
             pass
+        if "chat not found" in err_body.lower() or "blocked by the user" in err_body.lower():
+            return False, "Veuillez d'abord ouvrir notre bot @WadifaBbot sur Telegram et cliquer sur 'Démarrer' (/start) pour autoriser l'envoi."
         return False, f"Erreur Telegram ({e.code}): {err_body}"
     except Exception as e:
         return False, str(e)

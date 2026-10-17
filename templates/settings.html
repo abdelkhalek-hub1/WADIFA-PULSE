@@ -249,8 +249,9 @@
                                 </label>
                                 <input type="text" id="telegramChatId" placeholder="ex: 5022471884"
                                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-400 transition">
-                                <p class="text-[10px] text-slate-400 mt-1">
-                                    Envoyez <code class="text-sky-700 font-bold">/start</code> à <a href="https://t.me/userinfobot" target="_blank" class="text-sky-600 underline">@userinfobot</a> sur Telegram pour l'obtenir.
+                                <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                                    1. Obtenez votre ID via <a href="https://t.me/userinfobot" target="_blank" class="text-sky-600 underline font-semibold">@userinfobot</a> (ou @idbot).<br>
+                                    2. Ouvrez notre bot <a href="https://t.me/WadifaBbot" target="_blank" class="text-emerald-700 underline font-bold">@WadifaBbot</a> et cliquez sur <b>Démarrer (/start)</b>.
                                 </p>
                             </div>
 
@@ -607,6 +608,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                if (res.redirected || res.status === 401 || res.status === 403) {
+                    showToast("Votre session a expiré. Veuillez vous reconnecter.", "amber", "ph-warning");
+                    setTimeout(() => window.location.href = '/login', 1200);
+                    return;
+                }
+
                 const data = await res.json();
                 if (data.success) {
                     showToast("Canaux de notification mis à jour !", "emerald", "ph-check-circle");
@@ -636,14 +644,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegram_chat_id: chatId, telegram_bot_token: botToken })
                 });
+
+                if (res.redirected || res.status === 401 || res.status === 403) {
+                    showToast("Votre session a expiré. Veuillez vous reconnecter.", "amber", "ph-warning");
+                    setTimeout(() => window.location.href = '/login', 1200);
+                    return;
+                }
+
                 const data = await res.json();
                 if (data.success) {
                     showToast("Test réussi ! Vérifiez votre application Telegram 📲", "emerald", "ph-check-circle");
                 } else {
-                    showToast("Échec : " + (data.message || "Vérifiez votre Chat ID"), "rose", "ph-warning-circle");
+                    showToast(data.message || "Échec : Vérifiez votre Chat ID", "rose", "ph-warning-circle");
                 }
             } catch (e) {
-                showToast("Erreur réseau lors de l'envoi du test", "rose", "ph-warning-circle");
+                showToast("Erreur de communication avec le serveur", "rose", "ph-warning-circle");
             }
         }
 
@@ -661,6 +676,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ notification_email: email })
                 });
+
+                if (res.redirected || res.status === 401 || res.status === 403) {
+                    showToast("Votre session a expiré. Veuillez vous reconnecter.", "amber", "ph-warning");
+                    setTimeout(() => window.location.href = '/login', 1200);
+                    return;
+                }
+
                 const data = await res.json();
                 if (data.success) {
                     showToast("Email test transmis ! Vérifiez votre boîte de réception ✉️", "emerald", "ph-check-circle");
@@ -668,7 +690,7 @@
                     showToast("Échec : " + (data.message || "Erreur d'envoi"), "rose", "ph-warning-circle");
                 }
             } catch (e) {
-                showToast("Erreur réseau lors de l'envoi du test", "rose", "ph-warning-circle");
+                showToast("Erreur de communication avec le serveur", "rose", "ph-warning-circle");
             }
         }
 
