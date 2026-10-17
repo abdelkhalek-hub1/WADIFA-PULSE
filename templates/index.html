@@ -1123,7 +1123,16 @@
                         isScrapePolling = false;
                         resetScrapeButton();
                         await fetchJobs();
-                        showToast('Veille achevée : Registre synchronisé', 'emerald', 'ph-check-circle');
+                        const info = data.last_result;
+                        if (info && info.success) {
+                            let msg = `Veille en direct achevée : ${info.total_jobs} concours vérifiés`;
+                            if (info.telegram_sent) msg += ' • Telegram notifié';
+                            showToast(msg, 'emerald', 'ph-check-circle');
+                        } else if (info && !info.success) {
+                            showToast('Avertissement : ' + (info.error || 'Erreur lors de la synchronisation'), 'rose', 'ph-warning-circle');
+                        } else {
+                            showToast('Veille achevée : Registre synchronisé', 'emerald', 'ph-check-circle');
+                        }
                     }
                 } catch (e) {
                     clearInterval(interval);

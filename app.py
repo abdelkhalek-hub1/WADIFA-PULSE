@@ -29,6 +29,7 @@ app.secret_key = os.getenv("SECRET_KEY", "wadifa-secret-super-key-2026-xyz-moroc
 init_db()
 
 is_scraping = False
+last_scrape_result = None
 
 def login_required(f):
     @wraps(f)
@@ -90,7 +91,10 @@ def api_get_jobs():
 @app.route("/api/scrape/status", methods=["GET"])
 @login_required
 def api_scrape_status():
-    return jsonify({"is_scraping": is_scraping})
+    return jsonify({
+        "is_scraping": is_scraping,
+        "last_result": last_scrape_result
+    })
 
 
 @app.route("/api/history", methods=["GET"])
@@ -103,14 +107,15 @@ def api_get_history():
 @app.route("/api/scrape", methods=["POST"])
 @login_required
 def api_scrape():
-    global is_scraping
+    global is_scraping, last_scrape_result
     if is_scraping:
         return jsonify({"success": False, "message": "Scraping déjà en cours..."}), 400
 
     def run_worker():
-        global is_scraping
+        global is_scraping, last_scrape_result
         try:
             is_scraping = True
+            print("🚀 Début de l'actualisation en direct...")
             jobs = fetch_all_jobs()
             if jobs:
                 # 1. Sauvegarde dans Supabase
@@ -130,8 +135,34 @@ def api_scrape():
                 
                 # 3. Synchronisation Sheets et alertes
                 sheet_url = sync_all_storage(jobs)
-                send_telegram_message(jobs, sheet_url)
-                send_email_notification(jobs, sheet_url)
+                telegram_ok = send_telegram_message(jobs, sheet_url)
+                email_ok = send_email_notification(jobs, sheet_url)
+
+                last_scrape_result = {
+                    "success": True,
+                    "total_jobs": len(jobs),
+                    "urgent_jobs": urgent_count,
+                    "telegram_sent": bool(telegram_ok),
+                    "email_sent": bool(email_ok),
+                    "message": f"{len(jobs)} concours synchronisés."
+                }
+                print(f"✅ Scraping terminé avec succès : {len(jobs)} concours synchronisés.")
+            else:
+                last_scrape_result = {
+                    "success": True,
+                    "total_jobs": 0,
+                    "urgent_jobs": 0,
+                    "telegram_sent": False,
+                    "email_sent": False,
+                    "message": "Aucun concours actif trouvé lors de ce passage."
+                }
+        except Exception as e:
+            print(f"❌ Erreur lors de l'actualisation : {e}")
+            last_scrape_result = {
+                "success": False,
+                "error": str(e),
+                "message": f"Erreur de veille : {e}"
+            }
         finally:
             is_scraping = False
 
