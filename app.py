@@ -32,6 +32,8 @@ from core import (
     send_telegram_direct,
     send_email_direct,
     dispatch_all_user_alerts,
+    verify_user_otp,
+    resend_user_otp,
 )
 
 app = Flask(__name__, template_folder="templates")
@@ -52,7 +54,7 @@ def login_required(f):
     return decorated_function
 
 # ==========================================
-# Routes d'Authentification (Auth)
+# Routes d'Authentification & Vérification OTP
 # ==========================================
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -65,14 +67,49 @@ def signup():
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
 
-        ok, msg, user_dict = register_user(name, email, password)
+        ok, msg, user_dict, otp = register_user(name, email, password)
         if ok and user_dict:
-            session["user"] = user_dict
-            return redirect(url_for("settings"))
+            session["pending_verification_email"] = user_dict["email"]
+            return redirect(url_for("verify_otp_page"))
         else:
             error = msg
 
     return render_template("signup.html", error=error)
+
+@app.route("/verify-otp", methods=["GET", "POST"])
+def verify_otp_page():
+    if "user" in session:
+        return redirect(url_for("index"))
+
+    email = request.args.get("email") or session.get("pending_verification_email", "")
+    if not email:
+        return redirect(url_for("signup"))
+
+    error = None
+    if request.method == "POST":
+        entered_email = request.form.get("email") or email
+        otp_code = request.form.get("otp_code", "").strip()
+
+        ok, msg, user_dict = verify_user_otp(entered_email, otp_code)
+        if ok and user_dict:
+            session.pop("pending_verification_email", None)
+            session["user"] = user_dict
+            # Redirection directe vers la configuration des critères
+            return redirect(url_for("settings"))
+        else:
+            error = msg
+
+    return render_template("verify_otp.html", email=email, error=error)
+
+@app.route("/api/resend-otp", methods=["POST"])
+def api_resend_otp():
+    data = request.get_json() or {}
+    email = data.get("email") or session.get("pending_verification_email")
+    if not email:
+        return jsonify({"success": False, "message": "Email manquant."}), 400
+
+    ok, msg = resend_user_otp(email)
+    return jsonify({"success": ok, "message": msg})
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -86,6 +123,9 @@ def login():
         
         user = authenticate_user(email, password)
         if user:
+            if user.get("pending_verification"):
+                session["pending_verification_email"] = user["email"]
+                return redirect(url_for("verify_otp_page", email=user["email"]))
             session["user"] = user
             return redirect(url_for("index"))
         else:
@@ -118,15 +158,23 @@ def settings():
 def api_get_jobs():
     user = session.get("user")
     user_id = user["id"] if user else None
+    prefs = get_user_preferences(user_id) if user_id else {}
     jobs = get_user_jobs(user_id=user_id, active_only=False)
     stats = calculate_stats(jobs)
+
+    target_profs = prefs.get("target_profiles", [])
+    profile_label = " · ".join(target_profs) if target_profs else "Non configuré"
+
     return jsonify({
         "jobs": jobs,
         "stats": stats,
         "is_scraping": is_scraping,
-        "profile": config.PROFILE_NAME,
+        "is_configured": prefs.get("is_configured", False),
+        "target_profiles": target_profs,
+        "profile": profile_label,
         "user": user
     })
+
 
 @app.route("/api/scrape/status", methods=["GET"])
 @login_required

@@ -26,6 +26,13 @@ from .database import (
     update_user_job_status,
     get_all_active_users_for_alert,
     update_user_account,
+    verify_user_otp,
+    resend_user_otp,
+)
+from .security import (
+    is_disposable_email,
+    generate_otp_code,
+    get_otp_expiry,
 )
 from .scraper import (
     fetch_all_jobs,
@@ -40,6 +47,7 @@ from .notifier import (
     send_email_direct,
     filter_jobs_for_user_prefs,
     dispatch_all_user_alerts,
+    send_otp_email,
 )
 from .storage import (
     sync_all_storage,
