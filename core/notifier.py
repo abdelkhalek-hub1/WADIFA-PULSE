@@ -30,7 +30,8 @@ def send_telegram_message(jobs: list[dict], sheet_url: str = "") -> bool:
         return False
 
     if not config.TELEGRAM_BOT_TOKEN or not config.TELEGRAM_CHAT_ID:
-        print("⚠️ Configuration Telegram incomplète (TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID manquant).")
+        print(f"[ATTENTION] Configuration Telegram incomplète : BOT_TOKEN={'Défini' if config.TELEGRAM_BOT_TOKEN else 'Vide'}, CHAT_ID='{config.TELEGRAM_CHAT_ID}'.")
+        print("[INFO] Vérifiez que TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID sont ajoutés dans Settings > Secrets and variables > Actions.")
         return False
 
     today_str = date.today().strftime("%d/%m/%Y")
@@ -156,7 +157,8 @@ def send_email_notification(jobs: list[dict], sheet_url: str = "") -> bool:
         return False
 
     if not config.EMAIL_SENDER or not config.EMAIL_PASSWORD or not config.EMAIL_RECIPIENT:
-        print("⚠️ Configuration Email incomplète.")
+        print(f"[ATTENTION] Configuration Email incomplète : SENDER='{config.EMAIL_SENDER}', RECIPIENT='{config.EMAIL_RECIPIENT}', PASSWORD={'Défini' if config.EMAIL_PASSWORD else 'Vide'}.")
+        print("[INFO] Vérifiez que EMAIL_SENDER, EMAIL_PASSWORD et EMAIL_RECIPIENT sont bien ajoutés dans Settings > Secrets and variables > Actions.")
         return False
 
     today_str = date.today().strftime("%d/%m/%Y")

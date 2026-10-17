@@ -78,8 +78,8 @@ def main():
     sheet_url = sync_all_storage(jobs)
 
     # 4. Envoi des notifications (Telegram, Email, WhatsApp)
-    if new_jobs or not seen_ids:
-        print("\nDiffusion des notifications d'alerte en cours...")
+    if jobs:
+        print(f"\nDiffusion des alertes en cours pour {len(jobs)} concours actifs...")
         
         # Telegram
         send_telegram_message(jobs, sheet_url)
@@ -91,7 +91,7 @@ def main():
         # Email
         send_email_notification(jobs, sheet_url)
     else:
-        print("\n[INFO] Aucun nouveau concours aujourd'hui, les données ont été synchronisées.")
+        print("\n[INFO] Aucun concours actif correspondant trouvé pour le moment.")
 
     # 5. Mise à jour de l'historique
     all_current_ids = [j["id"] for j in jobs]
