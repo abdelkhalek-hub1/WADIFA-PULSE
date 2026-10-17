@@ -79,19 +79,19 @@
                 
                 <!-- Brand & Official Institutional Lockup -->
                 <div class="flex items-center space-x-3.5 min-w-0">
-                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-slate-200/90 bg-white flex items-center justify-center flex-shrink-0 shadow-xs p-0.5">
-                        <img src="{{ url_for('static', filename='icon_cropped.png') }}" alt="Wadifa Pulse" class="w-full h-full object-contain">
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs font-bold tracking-wider uppercase text-emerald-900">Wadifa Pulse</span>
-                            <span class="text-slate-300">&middot;</span>
-                            <span class="text-xs font-semibold text-slate-500">Observatoire de l'Emploi Public</span>
+                    <a href="/" class="flex items-center space-x-3 group min-w-0">
+                        <img src="{{ url_for('static', filename='icon_transparent.png') }}" alt="Wadifa Pulse" class="h-10 w-10 object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105 flex-shrink-0">
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-black tracking-tight text-slate-900 uppercase font-sans">WADIFA<span class="text-emerald-700">PULSE</span></span>
+                                <span class="text-slate-300">&middot;</span>
+                                <span class="text-xs font-semibold text-slate-600 hidden sm:inline">البحث عن وظائف بوضوح</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 truncate mt-0.5">
+                                Observatoire Public &middot; Cible : <span id="profileName" class="font-bold text-slate-900">Développement Web Full Stack (3ème grade)</span>
+                            </p>
                         </div>
-                        <p class="text-xs text-slate-600 truncate mt-0.5">
-                            Indexation ciblée : <span id="profileName" class="font-bold text-slate-900">Développement Web Full Stack</span>
-                        </p>
-                    </div>
+                    </a>
                 </div>
 
                 <!-- Action Controls -->
