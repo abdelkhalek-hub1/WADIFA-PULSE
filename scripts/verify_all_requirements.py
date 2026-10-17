@@ -26,6 +26,16 @@ print("✅ Signup with tempmail correctly rejected!")
 
 print("\n=== TEST 3: Signup with Valid Email & OTP Generation ===")
 test_email = "karim_alami_test_v2@gmail.com"
+with get_db() as (conn, db_type):
+    cur = conn.cursor()
+    if db_type == "postgres":
+        cur.execute("DELETE FROM user_preferences WHERE user_id IN (SELECT id FROM users WHERE email = %s);", (test_email,))
+        cur.execute("DELETE FROM users WHERE email = %s;", (test_email,))
+    else:
+        cur.execute("DELETE FROM user_preferences WHERE user_id IN (SELECT id FROM users WHERE email = ?);", (test_email,))
+        cur.execute("DELETE FROM users WHERE email = ?;", (test_email,))
+    conn.commit()
+
 res_signup = client.post("/signup", data={"name": "Karim Alami", "email": test_email, "password": "securepassword2026"}, follow_redirects=False)
 print("Signup redirect status:", res_signup.status_code, "Location:", res_signup.headers.get("Location"))
 assert res_signup.status_code == 302
