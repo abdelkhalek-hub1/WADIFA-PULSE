@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WadifaBot Maroc — Veille Officielle des Concours Publics</title>
+    <title>Wadifa Pulse — Veille Officielle des Concours Publics</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -75,12 +79,12 @@
                 
                 <!-- Brand & Official Institutional Lockup -->
                 <div class="flex items-center space-x-3.5 min-w-0">
-                    <div class="w-9 h-9 rounded-lg bg-emerald-900 border border-emerald-800 flex items-center justify-center text-white flex-shrink-0 shadow-xs">
-                        <i class="ph-bold ph-shield-check text-lg"></i>
+                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-slate-200/90 bg-white flex items-center justify-center flex-shrink-0 shadow-xs p-0.5">
+                        <img src="{{ url_for('static', filename='icon_cropped.png') }}" alt="Wadifa Pulse" class="w-full h-full object-contain">
                     </div>
                     <div class="min-w-0">
                         <div class="flex items-center space-x-2">
-                            <span class="text-xs font-bold tracking-wider uppercase text-emerald-900">WadifaBot Maroc</span>
+                            <span class="text-xs font-bold tracking-wider uppercase text-emerald-900">Wadifa Pulse</span>
                             <span class="text-slate-300">&middot;</span>
                             <span class="text-xs font-semibold text-slate-500">Observatoire de l'Emploi Public</span>
                         </div>
