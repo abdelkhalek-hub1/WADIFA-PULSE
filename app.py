@@ -170,8 +170,10 @@ def api_download_excel():
     return jsonify({"success": False, "message": "Fichier Excel non disponible."}), 404
 
 if __name__ == "__main__":
+    port = int(os.getenv("PORT", 5000))
     print("\n" + "=" * 65)
-    print("🌐 WadifaBot sécurisé avec Supabase PostgreSQL & Authentification")
-    print("👉 Connectez-vous sur : http://127.0.0.1:5000/login")
+    print("WadifaBot sécurisé avec Supabase PostgreSQL & Authentification")
+    print(f"Serveur actif sur le port {port}")
     print("=" * 65 + "\n")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
+
