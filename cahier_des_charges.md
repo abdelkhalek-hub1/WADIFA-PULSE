@@ -10,10 +10,10 @@
 | :--- | :--- |
 | **Nom de code du projet** | Wadifa Pulse (`emploi-public` / `wadifa-pulse`) |
 | **Porteur du projet** | Abdelkhalek Ouaraqy |
-| **Version actuelle** | 2.4 (Production Ready) |
-| **Profil ciblé** | Développement Digital / Web Full Stack / Informatique |
-| **Statut d'hébergement** | Production active sur Railway (`emploi-public-production.up.railway.app`) |
-| **Dépôt Git source** | `https://github.com/abdelkhalek-hub1/emploi-public` |
+| **Version actuelle** | v2.1.0 (Production Live) |
+| **Profil ciblé** | Multi-Filières Personnalisable & Multi-Tenant (Bilingue Arabe/Français) |
+| **Statut d'hébergement** | Production active sur Railway (`https://wadifapulse.up.railway.app`) |
+| **Dépôt Git source** | `https://github.com/abdelkhalek-hub1/WADIFA-PULSE` |
 
 ---
 
