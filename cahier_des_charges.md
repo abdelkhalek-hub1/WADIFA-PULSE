@@ -284,3 +284,52 @@ L'interface s'affranchit des styles génériques d'IA (dégradés violets criard
 | **Base de Données Principale**| Cloud DBaaS | **Supabase (PostgreSQL 17)** | Stockage permanent des concours, sessions et utilisateurs |
 | **Base de Données Fallback** | Local SQLite | **`wadifa_local.db`** | Continuité de service hors-ligne |
 | **Canaux de Diffusion** | API Externe | **Telegram Bot + Gmail SMTP** | Alertes push sur smartphone et rapport e-mail |
+
+---
+
+## 7. Feuille de Route Stratégique des Versions (Roadmap)
+
+### 7.1 Version 1.0 (Terminée & Déployée — Tag `v1.0.0`)
+- Moteur de base monolithique d'agrégation d'offres (`emploi-public.ma` + `wadifa-info.com`).
+- Tableau de bord Bento Grid et tabulaire haute performance.
+- Authentification avec hachage sécurisé des mots de passe.
+- Système d'alertes Telegram, Gmail SMTP et synchronisation Google Sheets.
+- Identité visuelle institutionnelle souveraine : logo et emblème transparents haute définition, favicons multi-résolutions.
+- Pipeline GitHub Actions cron planifié à 08:00 et 13:00 (GMT+1 Maroc).
+
+### 7.2 Version 2.0 (Terminée & Déployée — Tag `v2.0.0`)
+- **Architecture SaaS Multi-Tenant :** Inscription libre (`/signup`) et connexion sécurisée (`/login`).
+- **Gestionnaire Dynamique de Préférences (`/settings`) :**
+  - Sélection de profils cibles prédéfinis et personnalisés (Web Full Stack, Systèmes & Réseaux, Cybersécurité, Data).
+  - Sélection des échelles et grades de la fonction publique (Technicien Spécialisé 3ème grade, Ingénieur d'État, Administrateur).
+  - Filtrage par niveau d'études (Bac+2, Bac+3, Bac+5) et nuage de mots-clés dynamiques.
+- **Canaux d'Alerte Personnalisés par Utilisateur :**
+  - Intégration de son propre identifiant Telegram Chat ID et Token Bot dédié avec action de test immédiate.
+  - Configuration de son email personnel de réception avec test direct en boîte de réception.
+  - Lien Google Sheets privé par utilisateur.
+- **Interactions Isolées par Utilisateur :**
+  - Table `user_job_interactions` isolant les favoris (`is_favorite`) et les statuts (`status_applied`) par compte utilisateur.
+- **Distributeur Multi-Utilisateurs (`dispatch_all_user_alerts`) :**
+  - Moteur d'évaluation filtrant la liste globale des offres selon le profil individuel de chaque utilisateur actif avant transmission.
+
+### 7.3 Version 3.0 (Prochaine Étape : Moteur d'Agrégation Multi-Plateformes — Engine Expansion)
+Extension du moteur autonome pour couvrir l'intégralité du marché de l'emploi marocain (Public, Privé & Spécialisé) :
+
+1. **Secteur Public & Semi-Public :**
+   - **Emploi-Public.ma** : Détection des avis de recrutement ministériels et avis de concours.
+   - **Ministères et Établissements Publics** (Portails directs : OCP, ONEE, RAM, CDG, ONCF).
+   - **OFPPT Recrutement** : Concours d'accès et offres de formateurs / personnel technique.
+2. **Secteur Privé & Portails Nationaux Généralistes :**
+   - **LinkedIn Jobs Maroc** (API / Scraper ciblé profil Maroc).
+   - **Rekrute.com** : Extraction des offres IT et techniques.
+   - **Emploi.ma** : Suivi des offres CDI / CDD au Maroc.
+   - **Indeed Maroc**.
+   - **MarocAnnonces.com** (Section Offres d'Emploi).
+   - **Dreamjob.ma** : Agrégation des opportunités et stages.
+   - **Bayt.com Maroc**.
+   - **JobSquare.ma**.
+3. **Sites Spécialisés & Complémentaires :**
+   - **Alwadifa.ma** : Veille sur les concours et résultats de présélection.
+   - **Trouver un emploi OFPPT** (`ofppt.ma/fr/trouver-un-emploi`).
+   - **MonCallCenter.ma** : Pour les postes de relation client et support technique.
+
