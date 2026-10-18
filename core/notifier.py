@@ -355,6 +355,7 @@ def _send_via_brevo_api(api_key: str, sender: str, recipient: str, subject: str,
         sender_email = sender or config.EMAIL_SENDER or "wadifa.pulse.contact@gmail.com"
         payload = {
             "sender": {"email": sender_email, "name": "Wadifa Pulse"},
+            "replyTo": {"email": "wadifa.pulse.contact@gmail.com", "name": "Wadifa Pulse Contact"},
             "to": [{"email": recipient}],
             "subject": subject,
             "htmlContent": html_body
