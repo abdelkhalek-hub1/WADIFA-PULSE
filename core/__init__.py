@@ -37,6 +37,7 @@ from .database import (
     verify_and_apply_email_change,
     get_pending_email_change,
     cancel_email_change_request,
+    delete_user_account,
 )
 from .security import (
     is_disposable_email,

@@ -343,11 +343,75 @@ def send_telegram_direct(chat_id: str, bot_token: str = None, message: str = "")
         return False, str(e)
 
 
+def _send_via_brevo_api(api_key: str, sender: str, recipient: str, subject: str, html_body: str) -> tuple[bool, str]:
+    """Envoie un email via l'API REST HTTPS de Brevo (Port 443 - 300 emails/jour gratuits, zéro blocage)."""
+    try:
+        url = "https://api.brevo.com/v3/smtp/email"
+        headers = {
+            "api-key": api_key.strip(),
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        sender_email = sender or "notifications@wadifapulse.up.railway.app"
+        payload = {
+            "sender": {"email": sender_email, "name": "Wadifa Pulse"},
+            "to": [{"email": recipient}],
+            "subject": subject,
+            "htmlContent": html_body
+        }
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status in (200, 201, 202):
+                print(f"✅ [BREVO SUCCESS] Email délivré à {recipient} via HTTPS API.")
+                return True, "Email envoyé avec succès via Brevo HTTPS."
+            return False, f"Brevo API returned status {resp.status}"
+    except Exception as e:
+        return False, f"Erreur Brevo API: {e}"
+
+def _send_via_resend_api(api_key: str, sender: str, recipient: str, subject: str, html_body: str) -> tuple[bool, str]:
+    """Envoie un email via l'API REST HTTPS de Resend (Port 443 - 3000 emails/mois gratuits, zéro blocage)."""
+    try:
+        url = "https://api.resend.com/emails"
+        headers = {
+            "Authorization": f"Bearer {api_key.strip()}",
+            "Content-Type": "application/json"
+        }
+        sender_email = sender or "Wadifa Pulse <onboarding@resend.dev>"
+        payload = {
+            "from": sender_email,
+            "to": [recipient],
+            "subject": subject,
+            "html": html_body
+        }
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status in (200, 201, 202):
+                print(f"✅ [RESEND SUCCESS] Email délivré à {recipient} via HTTPS API.")
+                return True, "Email envoyé avec succès via Resend HTTPS."
+            return False, f"Resend API returned status {resp.status}"
+    except Exception as e:
+        return False, f"Erreur Resend API: {e}"
+
 def send_email_direct(recipient: str, subject: str, html_body: str) -> tuple[bool, str]:
-    """Envoie un email direct vers un destinataire spécifique via le serveur SMTP configuré."""
+    """Envoie un email direct vers un destinataire spécifique via Brevo/Resend HTTPS ou SMTP."""
     dest = (recipient or "").strip()
     if not dest or "@" not in dest:
         return False, "Adresse email destinataire invalide."
+
+    # 1. Priorité aux APIs HTTPS (Port 443 - Jamais bloqué par Railway / Cloud)
+    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
+    if brevo_key:
+        ok_b, msg_b = _send_via_brevo_api(brevo_key, config.EMAIL_SENDER, dest, subject, html_body)
+        if ok_b:
+            return True, msg_b
+        print(f"⚠️ [BREVO WARN] Basculement suite à : {msg_b}")
+
+    resend_key = os.getenv("RESEND_API_KEY", "").strip()
+    if resend_key:
+        ok_r, msg_r = _send_via_resend_api(resend_key, config.EMAIL_SENDER, dest, subject, html_body)
+        if ok_r:
+            return True, msg_r
+        print(f"⚠️ [RESEND WARN] Basculement suite à : {msg_r}")
 
     if not config.EMAIL_SENDER or not config.EMAIL_PASSWORD:
         return False, "Serveur SMTP non configuré (EMAIL_SENDER ou EMAIL_PASSWORD manquant)."

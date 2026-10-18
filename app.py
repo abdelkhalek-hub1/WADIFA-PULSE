@@ -49,6 +49,7 @@ from core import (
     get_pending_email_change,
     cancel_email_change_request,
     send_email_change_confirmation,
+    delete_user_account,
 )
 
 app = Flask(__name__, template_folder="templates")
@@ -87,6 +88,10 @@ def signup():
 
         ok, msg, user_dict, otp = register_user(name, email, password)
         if ok and user_dict:
+            if user_dict.get("auto_activated") or not otp:
+                # Fail-Safe : Connexion automatique immédiate si le serveur SMTP est bloqué
+                session["user"] = user_dict
+                return redirect(url_for("settings"))
             session["pending_verification_email"] = user_dict["email"]
             return redirect(url_for("verify_otp_page"))
         else:
@@ -128,6 +133,20 @@ def api_resend_otp():
         return jsonify({"success": False, "message": "Email manquant."}), 400
 
     ok, msg = resend_user_otp(email)
+    if msg == "AUTO_ACTIVATED":
+        # Auto-activation si SMTP bloqué : connexion directe du candidat
+        from core.database import get_db
+        with get_db() as (conn, db_type):
+            cur = conn.cursor()
+            if db_type == "postgres":
+                cur.execute("SELECT id, email, name, is_verified FROM users WHERE email = %s;", (email.strip().lower(),))
+            else:
+                cur.execute("SELECT id, email, name, is_verified FROM users WHERE email = ?;", (email.strip().lower(),))
+            row = cur.fetchone()
+            if row:
+                session["user"] = {"id": row[0], "email": row[1], "name": row[2], "is_verified": True}
+        return jsonify({"success": True, "message": "Compte activé avec succès !", "redirect": url_for("settings")})
+
     return jsonify({"success": ok, "message": msg})
 
 @app.route("/login", methods=["GET", "POST"])
@@ -560,6 +579,17 @@ def verify_email_change():
     else:
         return render_template("verify_email_result.html", success=False, message=msg)
 
+@app.route("/api/user/account/delete", methods=["POST"])
+@login_required
+def api_delete_account():
+    """Supprime définitivement le compte de l'utilisateur connecté et toutes ses données."""
+    user = session.get("user")
+    user_id = user["id"]
+    ok, msg = delete_user_account(user_id)
+    if ok:
+        session.clear()
+        return jsonify({"success": True, "message": msg, "redirect": url_for("login")})
+    return jsonify({"success": False, "message": msg}), 500
 
 @app.route("/api/user/test/telegram", methods=["POST"])
 @login_required

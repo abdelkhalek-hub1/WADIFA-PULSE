@@ -720,7 +720,16 @@ def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict
             # Envoi du code OTP par email
             ok_mail, mail_msg = send_otp_email(email_clean, otp_code, name_clean)
             if not ok_mail:
-                print(f"⚠️ [OTP] Échec envoi email à {email_clean}: {mail_msg}")
+                print(f"⚠️ [OTP FAIL-SAFE] Échec envoi email à {email_clean}: {mail_msg}. Auto-activation immédiate pour ne pas bloquer le candidat.")
+                if db_type == "postgres":
+                    cursor.execute("UPDATE users SET is_verified = TRUE, otp_code = NULL WHERE id = %s", (user_id,))
+                else:
+                    cursor.execute("UPDATE users SET is_verified = 1, otp_code = NULL WHERE id = ?", (user_id,))
+                conn.commit()
+                user_dict["is_verified"] = True
+                user_dict["auto_activated"] = True
+                return True, "Compte activé avec succès !", user_dict, None
+
             return True, "Code de validation envoyé par email.", user_dict, otp_code
 
         except Exception as e:
@@ -837,7 +846,13 @@ def resend_user_otp(email: str) -> tuple[bool, str]:
 
             ok_mail, mail_msg = send_otp_email(email_clean, new_otp, u_name)
             if not ok_mail:
-                print(f"⚠️ [OTP RESEND] Échec envoi email à {email_clean}: {mail_msg}")
+                print(f"⚠️ [OTP RESEND FAIL-SAFE] Échec envoi email à {email_clean}: {mail_msg}. Auto-activation du compte.")
+                if db_type == "postgres":
+                    cursor.execute("UPDATE users SET is_verified = TRUE, otp_code = NULL WHERE id = %s", (user_id,))
+                else:
+                    cursor.execute("UPDATE users SET is_verified = 1, otp_code = NULL WHERE id = ?", (user_id,))
+                conn.commit()
+                return True, "AUTO_ACTIVATED"
             return True, "Un nouveau code de vérification a été envoyé sur votre boîte email."
         except Exception as e:
             return False, f"Erreur lors du renvoi : {e}"
@@ -1682,3 +1697,36 @@ def get_all_active_users_for_alert() -> list[dict]:
         except Exception as e:
             print(f"⚠️ Erreur get_all_active_users_for_alert: {e}")
     return users_list
+
+
+def delete_user_account(user_id: int) -> tuple[bool, str]:
+    """Supprime définitivement un compte utilisateur et toutes ses données associées (cascade manuelle)."""
+    if not user_id:
+        return False, "Identifiant utilisateur manquant."
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("DELETE FROM telegram_link_tokens WHERE user_id = %s;", (user_id,))
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = %s;", (user_id,))
+                cursor.execute("DELETE FROM user_job_interactions WHERE user_id = %s;", (user_id,))
+                cursor.execute("DELETE FROM user_preferences WHERE user_id = %s;", (user_id,))
+                cursor.execute("DELETE FROM user_settings WHERE user_id = %s;", (user_id,))
+                cursor.execute("DELETE FROM users WHERE id = %s;", (user_id,))
+                conn.commit()
+            else:
+                cursor.execute("DELETE FROM telegram_link_tokens WHERE user_id = ?;", (user_id,))
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = ?;", (user_id,))
+                cursor.execute("DELETE FROM user_job_interactions WHERE user_id = ?;", (user_id,))
+                cursor.execute("DELETE FROM user_preferences WHERE user_id = ?;", (user_id,))
+                cursor.execute("DELETE FROM user_settings WHERE user_id = ?;", (user_id,))
+                cursor.execute("DELETE FROM users WHERE id = ?;", (user_id,))
+                conn.commit()
+
+            print(f"🗑️ [ACCOUNT DELETED] Compte user_id={user_id} entièrement supprimé.")
+            return True, "Votre compte et l'ensemble de vos données ont été définitivement supprimés."
+        except Exception as e:
+            print(f"❌ [ACCOUNT DELETE ERROR] user_id={user_id}: {e}")
+            return False, f"Erreur lors de la suppression du compte : {e}"
+

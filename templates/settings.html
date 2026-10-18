@@ -516,6 +516,25 @@
                                         </button>
                                     </div>
                                 </div>
+                        </div>
+
+                        <!-- Danger Zone: Suppression Définitive du Compte -->
+                        <div class="p-4 sm:p-5 rounded-2xl bg-rose-50/60 border border-rose-200 space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base flex-shrink-0">
+                                        <i class="ph-bold ph-warning-octagon"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-rose-950 uppercase tracking-wide">Zone de Danger</h3>
+                                        <p class="text-[11px] text-rose-800">Supprimer définitivement votre compte et l'ensemble de vos données</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="openDeleteAccountModal()"
+                                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-bold text-rose-700 hover:text-white bg-white hover:bg-rose-700 border border-rose-300 hover:border-rose-700 transition shadow-2xs space-x-1.5 flex-shrink-0">
+                                    <i class="ph-bold ph-trash text-sm"></i>
+                                    <span>Supprimer mon compte</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1320,7 +1339,70 @@
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
+
+        function openDeleteAccountModal() {
+            document.getElementById('deleteAccountModal').classList.remove('hidden');
+        }
+
+        function closeDeleteAccountModal() {
+            document.getElementById('deleteAccountModal').classList.add('hidden');
+        }
+
+        async function confirmDeleteAccount() {
+            const btn = document.getElementById('btnConfirmDeleteAccount');
+            const text = document.getElementById('btnConfirmDeleteText');
+            btn.disabled = true;
+            text.textContent = "Suppression en cours...";
+
+            try {
+                const res = await fetch('/api/user/account/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message || "Compte supprimé avec succès.", "emerald", "ph-check-circle");
+                    setTimeout(() => {
+                        window.location.href = data.redirect || "/login";
+                    }, 800);
+                } else {
+                    btn.disabled = false;
+                    text.textContent = "Oui, supprimer mon compte";
+                    showToast(data.message || "Échec de suppression du compte", "rose", "ph-warning-circle");
+                }
+            } catch (err) {
+                btn.disabled = false;
+                text.textContent = "Oui, supprimer mon compte";
+                showToast("Erreur de communication avec le serveur", "rose", "ph-warning-circle");
+            }
+        }
     </script>
+
+    <!-- Modal Confirmation Suppression de Compte -->
+    <div id="deleteAccountModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl p-6 space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl mx-auto">
+                <i class="ph-bold ph-warning"></i>
+            </div>
+            <div class="text-center space-y-1.5">
+                <h3 class="text-base font-bold text-slate-900">Supprimer définitivement votre compte ?</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Cette action est <strong>irréversible</strong>. Vos critères de veille, votre historique de candidature et vos liaisons Telegram seront immédiatement et définitivement effacés.
+                </p>
+            </div>
+            <div class="flex items-center justify-center space-x-3 pt-2">
+                <button type="button" onclick="closeDeleteAccountModal()"
+                    class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+                    Annuler
+                </button>
+                <button type="button" onclick="confirmDeleteAccount()" id="btnConfirmDeleteAccount"
+                    class="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition flex items-center space-x-1.5 shadow-sm">
+                    <i class="ph-bold ph-trash text-sm"></i>
+                    <span id="btnConfirmDeleteText">Oui, supprimer mon compte</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Telegram 1-Click Connection -->
     <div id="telegramModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden">
