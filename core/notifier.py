@@ -716,13 +716,22 @@ def send_otp_email(recipient: str, otp_code: str, user_name: str = "", base_url:
                 <td align="center">
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);">
                         
-                        <!-- En-tête sobre et officiel -->
+                        <!-- En-tête sobre et officiel avec Logo -->
                         <tr>
-                            <td style="padding: 26px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
                                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                     <tr>
                                         <td>
-                                            <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">Wadifa<span style="color: #059669;">Pulse</span></span>
+                                            <table border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding-right: 12px;">
+                                                        <img src="{root_url}/static/icon_transparent.png" width="34" height="34" alt="Wadifa Pulse" style="display: block; border-radius: 8px;">
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">Wadifa<span style="color: #059669;">Pulse</span></span>
+                                                    </td>
+                                                </tr>
+                                            </table>
                                         </td>
                                         <td align="right">
                                             <span style="display: inline-block; font-size: 11px; font-weight: 600; color: #059669; background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px;">
@@ -911,42 +920,106 @@ def send_email_change_confirmation(new_email: str, user_name: str, token: str, b
     html_content = f"""
     <!DOCTYPE html>
     <html lang="fr">
-    <head><meta charset="utf-8"></head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 25px; margin: 0; color: #1e293b;">
-        <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
-            <div style="background: linear-gradient(135deg, #15803d, #047857); padding: 28px 24px; text-align: center; color: #ffffff;">
-                <h1 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Wadifa Pulse</h1>
-                <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Confirmation de Changement d'Adresse Email</p>
-            </div>
-            <div style="padding: 28px 24px;">
-                <p style="font-size: 14px; margin-top: 0;">Bonjour <strong>{name_display}</strong>,</p>
-                <p style="font-size: 13px; color: #475569; line-height: 1.6;">
-                    Vous avez demandé à associer cette adresse email (<strong>{html.escape(dest)}</strong>) à votre compte <strong>Wadifa Pulse</strong>.
-                </p>
-                <p style="font-size: 13px; color: #475569; line-height: 1.6;">
-                    Pour valider définitivement cette modification et mettre à jour vos identifiants d'accès, cliquez sur le bouton sécurisé ci-dessous :
-                </p>
-                
-                <div style="text-align: center; margin: 28px 0;">
-                    <a href="{verify_url}" target="_blank" style="display: inline-block; background-color: #15803d; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; box-shadow: 0 2px 6px rgba(21, 128, 61, 0.3);">
-                        ✓ Confirmer mon nouvel email
-                    </a>
-                </div>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmation de changement d'email — Wadifa Pulse</title>
+    </head>
+    <body style="margin: 0; padding: 30px 15px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; line-height: 1.6;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+            <tr>
+                <td align="center">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);">
+                        
+                        <!-- En-tête sobre et officiel avec Logo -->
+                        <tr>
+                            <td style="padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td>
+                                            <table border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding-right: 12px;">
+                                                        <img src="{root_url}/static/icon_transparent.png" width="34" height="34" alt="Wadifa Pulse" style="display: block; border-radius: 8px;">
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">Wadifa<span style="color: #059669;">Pulse</span></span>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <td align="right">
+                                            <span style="display: inline-block; font-size: 11px; font-weight: 600; color: #059669; background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px;">
+                                                Sécurité du Compte
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
 
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 11px; color: #64748b; line-height: 1.5;">
-                    <p style="margin: 0;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :</p>
-                    <p style="margin: 4px 0 0 0; word-break: break-all; color: #047857; font-family: monospace;">{verify_url}</p>
-                </div>
+                        <!-- Corps principal -->
+                        <tr>
+                            <td style="padding: 30px 32px 24px 32px;">
+                                <h1 style="margin: 0 0 14px 0; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px;">
+                                    Modification de votre adresse email
+                                </h1>
+                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #334155;">
+                                    Bonjour <strong>{name_display}</strong>,
+                                </p>
+                                <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                                    Vous avez demandé à associer l'adresse email <strong>{html.escape(dest)}</strong> à votre compte <strong>Wadifa Pulse</strong>.
+                                </p>
+                                <p style="margin: 0 0 24px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                                    Pour valider définitivement ce changement et mettre à jour vos identifiants d'accès, cliquez sur le bouton sécurisé ci-dessous :
+                                </p>
 
-                <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin-top: 24px;">
-                    ⏳ <em>Ce lien sécurisé est valable pendant 24 heures. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité : votre adresse actuelle restera inchangée.</em>
-                </p>
+                                <!-- Bouton de confirmation -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 26px 0 24px 0;">
+                                    <tr>
+                                        <td align="center">
+                                            <a href="{verify_url}" target="_blank" style="display: inline-block; background-color: #059669; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 32px; border-radius: 8px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2); letter-spacing: 0.2px;">
+                                                ✓ Confirmer mon nouvel email
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
 
-                <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center;">
-                    Wadifa Pulse · Système Autonome de Veille et d'Alertes de l'Emploi Public au Maroc
-                </div>
-            </div>
-        </div>
+                                <!-- Délai d'expiration 24 heures -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 18px;">
+                                    <tr>
+                                        <td style="font-size: 12px; color: #b45309; font-weight: 500;">
+                                            ⏳ Ce lien sécurisé reste valable pendant <strong>24 heures</strong>.
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Lien direct de secours -->
+                                <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #64748b; line-height: 1.5;">
+                                    <span>Lien direct si le bouton ne s'ouvre pas :</span><br>
+                                    <a href="{verify_url}" target="_blank" style="color: #059669; text-decoration: underline; word-break: break-all; font-family: monospace; font-size: 11px;">
+                                        {verify_url}
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 18px 32px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+                                <p style="margin: 0 0 5px 0;">
+                                    Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.
+                                </p>
+                                <p style="margin: 0; color: #cbd5e1;">
+                                    © 2026 Wadifa Pulse · Observatoire et Veille Autonome de l'Emploi Public au Maroc.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
     </body>
     </html>
     """
