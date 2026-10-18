@@ -717,18 +717,13 @@ def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict
                 """, (user_id,))
                 conn.commit()
 
-            # Envoi du code OTP par email
-            ok_mail, mail_msg = send_otp_email(email_clean, otp_code, name_clean)
-            if not ok_mail:
-                print(f"⚠️ [OTP FAIL-SAFE] Échec envoi email à {email_clean}: {mail_msg}. Auto-activation immédiate pour ne pas bloquer le candidat.")
-                if db_type == "postgres":
-                    cursor.execute("UPDATE users SET is_verified = TRUE, otp_code = NULL WHERE id = %s", (user_id,))
-                else:
-                    cursor.execute("UPDATE users SET is_verified = 1, otp_code = NULL WHERE id = ?", (user_id,))
-                conn.commit()
-                user_dict["is_verified"] = True
-                user_dict["auto_activated"] = True
-                return True, "Compte activé avec succès !", user_dict, None
+            # Affichage clair du code OTP dans les logs
+            print(f"🔑 [NOUVEAU COMPTE] {email_clean} | Code OTP généré : {otp_code}")
+
+            # Envoi du code OTP par email en tâche de fond (Background Thread)
+            # afin de garantir une redirection instantanée (<0.05 seconde) pour le candidat
+            import threading
+            threading.Thread(target=send_otp_email, args=(email_clean, otp_code, name_clean), daemon=True).start()
 
             return True, "Code de validation envoyé par email.", user_dict, otp_code
 
@@ -844,15 +839,9 @@ def resend_user_otp(email: str) -> tuple[bool, str]:
                 """, (new_otp, str(new_expiry), user_id))
                 conn.commit()
 
-            ok_mail, mail_msg = send_otp_email(email_clean, new_otp, u_name)
-            if not ok_mail:
-                print(f"⚠️ [OTP RESEND FAIL-SAFE] Échec envoi email à {email_clean}: {mail_msg}. Auto-activation du compte.")
-                if db_type == "postgres":
-                    cursor.execute("UPDATE users SET is_verified = TRUE, otp_code = NULL WHERE id = %s", (user_id,))
-                else:
-                    cursor.execute("UPDATE users SET is_verified = 1, otp_code = NULL WHERE id = ?", (user_id,))
-                conn.commit()
-                return True, "AUTO_ACTIVATED"
+            print(f"🔄 [OTP RENVOYÉ] Nouveau code pour {email_clean} : {new_otp}")
+            import threading
+            threading.Thread(target=send_otp_email, args=(email_clean, new_otp, u_name), daemon=True).start()
             return True, "Un nouveau code de vérification a été envoyé sur votre boîte email."
         except Exception as e:
             return False, f"Erreur lors du renvoi : {e}"

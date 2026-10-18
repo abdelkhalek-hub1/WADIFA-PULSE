@@ -182,12 +182,6 @@
                 alertBox.innerHTML = `<i class="ph-bold ${data.success ? 'ph-check-circle' : 'ph-warning-circle'} text-base flex-shrink-0"></i><span>${data.message}</span>`;
                 alertBox.classList.remove('hidden');
 
-                if (data.redirect) {
-                    setTimeout(() => {
-                        window.location.href = data.redirect;
-                    }, 1000);
-                    return;
-                }
 
                 if (data.success) {
                     let seconds = 60;

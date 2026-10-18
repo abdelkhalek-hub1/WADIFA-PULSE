@@ -352,7 +352,7 @@ def _send_via_brevo_api(api_key: str, sender: str, recipient: str, subject: str,
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-        sender_email = sender or "notifications@wadifapulse.up.railway.app"
+        sender_email = sender or config.EMAIL_SENDER or "contact@wadifapulse.ma"
         payload = {
             "sender": {"email": sender_email, "name": "Wadifa Pulse"},
             "to": [{"email": recipient}],
@@ -365,7 +365,12 @@ def _send_via_brevo_api(api_key: str, sender: str, recipient: str, subject: str,
                 print(f"✅ [BREVO SUCCESS] Email délivré à {recipient} via HTTPS API.")
                 return True, "Email envoyé avec succès via Brevo HTTPS."
             return False, f"Brevo API returned status {resp.status}"
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode("utf-8") if e.fp else str(e)
+        print(f"❌ [BREVO HTTP {e.code}] {err_msg}")
+        return False, f"Brevo HTTP {e.code}: {err_msg}"
     except Exception as e:
+        print(f"❌ [BREVO ERROR] {e}")
         return False, f"Erreur Brevo API: {e}"
 
 def _send_via_resend_api(api_key: str, sender: str, recipient: str, subject: str, html_body: str) -> tuple[bool, str]:
@@ -389,7 +394,12 @@ def _send_via_resend_api(api_key: str, sender: str, recipient: str, subject: str
                 print(f"✅ [RESEND SUCCESS] Email délivré à {recipient} via HTTPS API.")
                 return True, "Email envoyé avec succès via Resend HTTPS."
             return False, f"Resend API returned status {resp.status}"
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode("utf-8") if e.fp else str(e)
+        print(f"❌ [RESEND HTTP {e.code}] {err_msg}")
+        return False, f"Resend HTTP {e.code}: {err_msg}"
     except Exception as e:
+        print(f"❌ [RESEND ERROR] {e}")
         return False, f"Erreur Resend API: {e}"
 
 def send_email_direct(recipient: str, subject: str, html_body: str) -> tuple[bool, str]:
