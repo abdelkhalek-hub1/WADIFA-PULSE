@@ -54,6 +54,9 @@ from core import (
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "wadifa-secret-super-key-2026-xyz-morocco")
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 # Initialisation unique de la base Supabase / SQLite
 init_db()
 
@@ -158,6 +161,14 @@ def logout():
 # ==========================================
 # Routes Google OAuth 2.0 (Sign in / Sign up)
 # ==========================================
+def _get_google_redirect_uri():
+    """Génère l'URI de redirection OAuth Google en forçant HTTPS en production."""
+    uri = url_for("auth_google_callback", _external=True)
+    if not (uri.startswith("http://localhost") or uri.startswith("http://127.0.0.1")):
+        if uri.startswith("http://"):
+            uri = "https://" + uri[7:]
+    return uri
+
 @app.route("/auth/google/login")
 def auth_google_login():
     """Redirige l'utilisateur vers la mire de consentement Google OAuth 2.0."""
@@ -171,7 +182,7 @@ def auth_google_login():
     state = secrets.token_urlsafe(16)
     session["google_oauth_state"] = state
 
-    redirect_uri = url_for("auth_google_callback", _external=True)
+    redirect_uri = _get_google_redirect_uri()
     params = {
         "client_id": client_id,
         "redirect_uri": redirect_uri,
@@ -204,7 +215,7 @@ def auth_google_callback():
     if not code or not state or (expected_state and state != expected_state):
         return render_template("login.html", error="Session OAuth expirée ou invalide. Veuillez réessayer.", google_client_id=client_id)
 
-    redirect_uri = url_for("auth_google_callback", _external=True)
+    redirect_uri = _get_google_redirect_uri()
 
     try:
         # Échange du code d'autorisation contre les tokens
@@ -502,8 +513,9 @@ def api_request_email_change():
         return jsonify({"success": False, "message": msg}), 400
 
     base_url = request.host_url.rstrip("/")
-    if "railway.app" in base_url and base_url.startswith("http://"):
-        base_url = "https://" + base_url.split("://", 1)[1]
+    if not (base_url.startswith("http://localhost") or base_url.startswith("http://127.0.0.1")):
+        if base_url.startswith("http://"):
+            base_url = "https://" + base_url[7:]
 
     em_ok, em_msg = send_email_change_confirmation(new_email, user.get("name", ""), token, base_url)
     if not em_ok:
