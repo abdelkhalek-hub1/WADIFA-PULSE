@@ -1020,13 +1020,25 @@
             }
         }
 
+        let isTelegramLinkHandled = false;
+        let isTelegramPollActive = false;
+
         function startTelegramPolling(token) {
-            if (telegramPollInterval) clearInterval(telegramPollInterval);
+            if (telegramPollInterval) {
+                clearInterval(telegramPollInterval);
+                telegramPollInterval = null;
+            }
+            isTelegramLinkHandled = false;
+            isTelegramPollActive = false;
+
             telegramPollInterval = setInterval(async () => {
+                if (isTelegramPollActive || isTelegramLinkHandled) return;
+                isTelegramPollActive = true;
                 try {
                     const res = await fetch('/api/user/telegram/link-status?token=' + encodeURIComponent(token));
                     const data = await res.json();
-                    if (data.success && data.connected) {
+                    if (data.success && data.connected && !isTelegramLinkHandled) {
+                        isTelegramLinkHandled = true;
                         clearInterval(telegramPollInterval);
                         telegramPollInterval = null;
 
@@ -1046,6 +1058,8 @@
                     }
                 } catch (e) {
                     console.error("Polling error:", e);
+                } finally {
+                    isTelegramPollActive = false;
                 }
             }, 2000);
         }
@@ -1319,7 +1333,16 @@
             }
         }
 
+        let lastToastMsg = "";
+        let lastToastTime = 0;
         function showToast(message, type = 'emerald', icon = 'ph-check-circle') {
+            const now = Date.now();
+            if (message === lastToastMsg && (now - lastToastTime) < 2500) {
+                return; // Prevent duplicate toast flood
+            }
+            lastToastMsg = message;
+            lastToastTime = now;
+
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `pointer-events-auto flex items-center space-x-2.5 px-4 py-3 rounded-xl border text-xs font-semibold shadow-lg transition-all transform duration-300 translate-y-2 opacity-0 bg-slate-900 text-white border-slate-700`;
