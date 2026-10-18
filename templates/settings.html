@@ -373,20 +373,6 @@
                         </div>
                     </div>
 
-                    <!-- Google Sheets / Export Card -->
-                    <div class="rounded-xl border border-slate-200 p-5 space-y-3 bg-slate-50/50">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center text-green-700">
-                                <i class="ph-bold ph-file-xls text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Google Sheets Personnel (Optionnel)</h3>
-                                <p class="text-[11px] text-slate-500">Synchronisation automatique de votre registre de veille</p>
-                            </div>
-                        </div>
-                        <input type="url" id="googleSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit"
-                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-400 transition">
-                    </div>
 
                     <!-- Save Alerts Button -->
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end">
@@ -607,7 +593,6 @@
             telegram_chat_id: "",
             email_alerts_enabled: true,
             notification_email: "{{ user.email }}",
-            google_sheet_url: "",
             alert_days: ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
         };
 
@@ -858,7 +843,6 @@
                     document.getElementById('telegramBotToken').value = data.telegram_bot_token || "";
                     document.getElementById('emailEnabled').checked = Boolean(data.email_alerts_enabled);
                     document.getElementById('notificationEmail').value = data.notification_email || "{{ user.email }}";
-                    document.getElementById('googleSheetUrl').value = data.google_sheet_url || "";
                     renderTelegramSection();
                     renderAlertDays();
                 }
@@ -1106,7 +1090,6 @@
                 telegram_bot_token: document.getElementById('telegramBotToken').value.trim(),
                 email_alerts_enabled: document.getElementById('emailEnabled').checked,
                 notification_email: document.getElementById('notificationEmail').value.trim(),
-                google_sheet_url: document.getElementById('googleSheetUrl').value.trim(),
                 alert_days: currentSettings.alert_days || ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
             };
 

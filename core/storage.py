@@ -324,11 +324,4 @@ def update_google_sheets_api(jobs: list[dict]) -> str | None:
 def sync_all_storage(jobs: list[dict]) -> str | None:
     export_to_html(jobs)
     export_to_excel_or_csv(jobs)
-    
-    if config.GOOGLE_SHEETS_ENABLED:
-        if config.GOOGLE_SHEET_WEBHOOK_URL:
-            update_google_sheets_webhook(jobs)
-        elif config.SPREADSHEET_ID:
-            update_google_sheets_api(jobs)
-
-    return config.SPREADSHEET_URL
+    return config.EXCEL_OUTPUT

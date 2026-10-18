@@ -591,7 +591,6 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
 
         user_name = u.get("name") or "Candidat"
         user_email = u.get("notification_email") or u.get("email")
-        target_sheet = safe_url(u.get("google_sheet_url") or config.SPREADSHEET_URL)
 
         # 2. Alerte Telegram personnalisée
         if u.get("telegram_enabled") and u.get("telegram_chat_id"):
@@ -612,8 +611,6 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
                 )
             if len(user_jobs) > 5:
                 lines.append(f"➕ <i>+ {len(user_jobs) - 5} autres offres sélectionnées sur votre tableau de bord.</i>\n")
-            if target_sheet:
-                lines.append(f"📋 <a href=\"{target_sheet}\"><b>Voir mon Google Sheets</b></a>")
 
             tg_ok, tg_err = send_telegram_direct(
                 chat_id=u["telegram_chat_id"],
