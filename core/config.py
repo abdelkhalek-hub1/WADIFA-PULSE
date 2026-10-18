@@ -110,3 +110,10 @@ HTML_OUTPUT = os.path.join(BASE_DIR, "concours_actifs.html")
 # 6. Sécurité & Cron Webhook
 # ==========================================
 CRON_SECRET = os.getenv("CRON_SECRET", "WadifaPulseCron2026")
+
+# ==========================================
+# 7. Authentification Google OAuth 2.0
+# ==========================================
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+

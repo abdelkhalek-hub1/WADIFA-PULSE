@@ -815,6 +815,82 @@ def resend_user_otp(email: str) -> tuple[bool, str]:
             return False, f"Erreur lors du renvoi : {e}"
 
 
+def get_or_create_google_user(email: str, name: str = "", google_id: str = "") -> dict | None:
+    """Récupère ou crée automatiquement un utilisateur authentifié via Google OAuth 2.0."""
+    email_clean = (email or "").strip().lower()
+    name_clean = (name or "").strip() or email_clean.split("@")[0]
+
+    if not email_clean or "@" not in email_clean:
+        return None
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        user_dict = None
+        try:
+            if db_type == "postgres":
+                cursor.execute("SELECT id, email, name, is_verified FROM users WHERE email = %s", (email_clean,))
+                row = cursor.fetchone()
+                if row:
+                    user_id = row[0]
+                    cursor.execute("UPDATE users SET is_verified = TRUE WHERE id = %s", (user_id,))
+                    user_dict = {"id": user_id, "email": row[1], "name": row[2] or name_clean, "is_verified": True}
+                else:
+                    random_pw = generate_password_hash(secrets.token_urlsafe(32))
+                    cursor.execute("""
+                        INSERT INTO users (email, password_hash, name, is_verified)
+                        VALUES (%s, %s, %s, TRUE)
+                        RETURNING id, email, name;
+                    """, (email_clean, random_pw, name_clean))
+                    row = cursor.fetchone()
+                    user_dict = {"id": row[0], "email": row[1], "name": row[2], "is_verified": True}
+
+                user_id = user_dict["id"]
+                cursor.execute("""
+                    INSERT INTO user_settings (user_id, notification_email)
+                    VALUES (%s, %s)
+                    ON CONFLICT (user_id) DO NOTHING;
+                """, (user_id, email_clean))
+
+                cursor.execute("""
+                    INSERT INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, is_configured)
+                    VALUES (%s, '[]', '[]', '[]', '', FALSE)
+                    ON CONFLICT (user_id) DO NOTHING;
+                """, (user_id,))
+                conn.commit()
+
+            else:
+                cursor.execute("SELECT id, email, name, is_verified FROM users WHERE email = ?", (email_clean,))
+                row = cursor.fetchone()
+                if row:
+                    user_id = row["id"]
+                    cursor.execute("UPDATE users SET is_verified = 1 WHERE id = ?", (user_id,))
+                    user_dict = {"id": user_id, "email": row["email"], "name": row["name"] or name_clean, "is_verified": True}
+                else:
+                    random_pw = generate_password_hash(secrets.token_urlsafe(32))
+                    cursor.execute("""
+                        INSERT INTO users (email, password_hash, name, is_verified)
+                        VALUES (?, ?, ?, 1);
+                    """, (email_clean, random_pw, name_clean))
+                    user_id = cursor.lastrowid
+                    user_dict = {"id": user_id, "email": email_clean, "name": name_clean, "is_verified": True}
+
+                cursor.execute("""
+                    INSERT OR IGNORE INTO user_settings (user_id, notification_email)
+                    VALUES (?, ?);
+                """, (user_id, email_clean))
+
+                cursor.execute("""
+                    INSERT OR IGNORE INTO user_preferences (user_id, target_profiles, target_grades, keywords, education_level, is_configured)
+                    VALUES (?, '[]', '[]', '[]', '', 0);
+                """, (user_id,))
+                conn.commit()
+
+            return user_dict
+        except Exception as e:
+            print(f"⚠️ Erreur get_or_create_google_user : {e}")
+            return None
+
+
 def update_user_account(user_id: int, name: str, new_password: str = None) -> tuple[bool, str]:
     """Met à jour le nom et optionnellement le mot de passe d'un utilisateur."""
     name_clean = (name or "").strip()

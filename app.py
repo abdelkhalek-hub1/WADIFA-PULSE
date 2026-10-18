@@ -1,5 +1,8 @@
 import os
 import json
+import secrets
+import urllib.parse
+import urllib.request
 import threading
 from functools import wraps
 from datetime import date
@@ -40,6 +43,7 @@ from core import (
     disconnect_user_telegram,
     process_telegram_update,
     check_telegram_updates_for_token,
+    get_or_create_google_user,
 )
 
 app = Flask(__name__, template_folder="templates")
@@ -80,7 +84,8 @@ def signup():
         else:
             error = msg
 
-    return render_template("signup.html", error=error)
+    google_client_id = getattr(config, "GOOGLE_CLIENT_ID", "") or os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    return render_template("signup.html", error=error, google_client_id=google_client_id)
 
 @app.route("/verify-otp", methods=["GET", "POST"])
 def verify_otp_page():
@@ -137,11 +142,141 @@ def login():
         else:
             error = "Identifiants invalides. Veuillez vérifier votre email et mot de passe."
 
-    return render_template("login.html", error=error)
+    google_client_id = getattr(config, "GOOGLE_CLIENT_ID", "") or os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    return render_template("login.html", error=error, google_client_id=google_client_id)
 
 @app.route("/logout")
 def logout():
     session.clear()
+    return redirect(url_for("login"))
+
+# ==========================================
+# Routes Google OAuth 2.0 (Sign in / Sign up)
+# ==========================================
+@app.route("/auth/google/login")
+def auth_google_login():
+    """Redirige l'utilisateur vers la mire de consentement Google OAuth 2.0."""
+    if "user" in session:
+        return redirect(url_for("index"))
+
+    client_id = getattr(config, "GOOGLE_CLIENT_ID", "") or os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    if not client_id:
+        return render_template("login.html", error="Connexion Google indisponible : GOOGLE_CLIENT_ID non configuré.", google_client_id="")
+
+    state = secrets.token_urlsafe(16)
+    session["google_oauth_state"] = state
+
+    redirect_uri = url_for("auth_google_callback", _external=True)
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+        "prompt": "select_account"
+    }
+    google_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    return redirect(google_url)
+
+@app.route("/auth/google/callback")
+def auth_google_callback():
+    """Réceptionne le code d'autorisation Google et connecte l'utilisateur."""
+    if "user" in session:
+        return redirect(url_for("index"))
+
+    error = request.args.get("error")
+    if error:
+        return render_template("login.html", error=f"Connexion Google annulée ({error}).", google_client_id=getattr(config, "GOOGLE_CLIENT_ID", ""))
+
+    code = request.args.get("code")
+    state = request.args.get("state")
+    expected_state = session.pop("google_oauth_state", None)
+
+    client_id = getattr(config, "GOOGLE_CLIENT_ID", "") or os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    client_secret = getattr(config, "GOOGLE_CLIENT_SECRET", "") or os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+
+    if not code or not state or (expected_state and state != expected_state):
+        return render_template("login.html", error="Session OAuth expirée ou invalide. Veuillez réessayer.", google_client_id=client_id)
+
+    redirect_uri = url_for("auth_google_callback", _external=True)
+
+    try:
+        # Échange du code d'autorisation contre les tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        token_payload = urllib.parse.urlencode({
+            "code": code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code"
+        }).encode("utf-8")
+
+        req = urllib.request.Request(token_url, data=token_payload, method="POST")
+        req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            token_data = json.loads(resp.read().decode("utf-8"))
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            return render_template("login.html", error="Impossible d'obtenir le jeton d'accès Google.", google_client_id=client_id)
+
+        # Récupération des informations du profil
+        info_req = urllib.request.Request("https://www.googleapis.com/oauth2/v3/userinfo")
+        info_req.add_header("Authorization", f"Bearer {access_token}")
+        with urllib.request.urlopen(info_req, timeout=10) as resp:
+            user_info = json.loads(resp.read().decode("utf-8"))
+
+        email = user_info.get("email")
+        name = user_info.get("name") or user_info.get("given_name") or email.split("@")[0]
+        google_id = user_info.get("sub", "")
+
+        user_dict = get_or_create_google_user(email=email, name=name, google_id=google_id)
+        if not user_dict:
+            return render_template("login.html", error="Échec de création ou d'association du compte.", google_client_id=client_id)
+
+        session["user"] = user_dict
+        return redirect(url_for("index"))
+
+    except Exception as e:
+        print(f"⚠️ Erreur OAuth Google Callback : {e}")
+        return render_template("login.html", error="Erreur lors de la validation auprès de Google.", google_client_id=client_id)
+
+@app.route("/api/auth/google/one-tap", methods=["POST"])
+def api_google_one_tap():
+    """Valide un credential JWT transmis par Google Identity Services (One-Tap / Button)."""
+    payload = request.get_json() or {}
+    credential = payload.get("credential")
+    if not credential:
+        return jsonify({"success": False, "message": "Jeton Google manquant."}), 400
+
+    try:
+        verify_url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + credential
+        with urllib.request.urlopen(verify_url, timeout=10) as resp:
+            info = json.loads(resp.read().decode("utf-8"))
+
+        client_id = getattr(config, "GOOGLE_CLIENT_ID", "") or os.getenv("GOOGLE_CLIENT_ID", "").strip()
+        if client_id and info.get("aud") != client_id:
+            return jsonify({"success": False, "message": "Audience du jeton non valide."}), 403
+
+        email = info.get("email")
+        name = info.get("name") or info.get("given_name") or (email.split("@")[0] if email else "")
+        google_id = info.get("sub", "")
+
+        if not email:
+            return jsonify({"success": False, "message": "Email non fourni par Google."}), 400
+
+        user_dict = get_or_create_google_user(email=email, name=name, google_id=google_id)
+        if not user_dict:
+            return jsonify({"success": False, "message": "Erreur lors de la connexion."}), 500
+
+        session["user"] = user_dict
+        return jsonify({"success": True, "redirect": url_for("index")})
+
+    except Exception as e:
+        print(f"⚠️ Erreur One-Tap Google : {e}")
+        return jsonify({"success": False, "message": "Jeton Google invalide ou expiré."}), 400
+
     return redirect(url_for("login"))
 
 # ==========================================
