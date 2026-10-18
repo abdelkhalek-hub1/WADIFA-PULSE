@@ -101,13 +101,25 @@ def verify_otp_page():
     if "user" in session:
         return redirect(url_for("index"))
 
-    email = request.args.get("email") or session.get("pending_verification_email", "")
+    email = (request.args.get("email") or session.get("pending_verification_email", "")).strip().lower()
+    code = request.args.get("code", "").strip()
+
+    # Validation en 1 Clic depuis le lien de l'email
+    if request.method == "GET" and code and email:
+        ok, msg, user_dict = verify_user_otp(email, code)
+        if ok and user_dict:
+            session.pop("pending_verification_email", None)
+            session["user"] = user_dict
+            return redirect(url_for("settings"))
+        else:
+            return render_template("verify_otp.html", email=email, error=msg)
+
     if not email:
         return redirect(url_for("signup"))
 
     error = None
     if request.method == "POST":
-        entered_email = request.form.get("email") or email
+        entered_email = (request.form.get("email") or email).strip().lower()
         otp_code = request.form.get("otp_code", "").strip()
 
         ok, msg, user_dict = verify_user_otp(entered_email, otp_code)

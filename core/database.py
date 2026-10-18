@@ -645,7 +645,7 @@ def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict
 
     pw_hash = generate_password_hash(password)
     otp_code = generate_otp_code()
-    otp_expires = get_otp_expiry(15)
+    otp_expires = get_otp_expiry(10)
 
     with get_db() as (conn, db_type):
         cursor = conn.cursor()
@@ -807,7 +807,7 @@ def resend_user_otp(email: str) -> tuple[bool, str]:
         return False, "Adresse email manquante."
 
     new_otp = generate_otp_code()
-    new_expiry = get_otp_expiry(15)
+    new_expiry = get_otp_expiry(10)
 
     with get_db() as (conn, db_type):
         cursor = conn.cursor()

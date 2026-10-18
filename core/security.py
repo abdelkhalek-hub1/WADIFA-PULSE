@@ -89,6 +89,6 @@ def generate_otp_code() -> str:
     """Génère un code OTP cryptographique aléatoire de 6 chiffres."""
     return f"{secrets.randbelow(900000) + 100000}"
 
-def get_otp_expiry(minutes: int = 15) -> datetime:
-    """Calcule la date d'expiration de l'OTP (par défaut 15 minutes)."""
+def get_otp_expiry(minutes: int = 10) -> datetime:
+    """Calcule la date d'expiration de l'OTP (par défaut 10 minutes)."""
     return datetime.utcnow() + timedelta(minutes=minutes)

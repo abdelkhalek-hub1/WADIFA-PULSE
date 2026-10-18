@@ -96,7 +96,7 @@
                     <label class="block text-xs font-medium text-slate-300 mb-2 text-center">
                         Saisissez le code à 6 chiffres
                     </label>
-                    <div class="relative">
+                    <div class="relative flex items-center">
                         <input 
                             type="text" 
                             name="otp_code" 
@@ -107,11 +107,20 @@
                             autocomplete="one-time-code"
                             autofocus
                             placeholder="000000"
-                            class="otp-input w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-2xl font-mono font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-inner"
+                            class="otp-input w-full px-4 py-3.5 pr-16 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-2xl font-mono font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-inner"
                         >
+                        <button 
+                            type="button" 
+                            id="btnPaste"
+                            onclick="pasteCode()" 
+                            title="Coller le code copié"
+                            class="absolute right-2 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold transition flex items-center space-x-1">
+                            <i class="ph-bold ph-clipboard text-xs"></i>
+                            <span>Coller</span>
+                        </button>
                     </div>
                     <p class="text-[11px] text-slate-500 text-center mt-2">
-                        <i class="ph-bold ph-clock mr-1"></i> Ce code reste valide pendant 15 minutes.
+                        <i class="ph-bold ph-clock mr-1"></i> Ce code et le lien restent valides pendant 10 minutes.
                     </p>
                 </div>
 
@@ -159,6 +168,22 @@
                 document.getElementById('btnSubmit').focus();
             }
         });
+
+        // Fonction pour coller automatiquement le code depuis le presse-papier
+        async function pasteCode() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const clean = (text || '').replace(/[^0-9]/g, '').slice(0, 6);
+                if (clean) {
+                    otpInput.value = clean;
+                    if (clean.length === 6) {
+                        otpForm.submit();
+                    }
+                }
+            } catch (err) {
+                otpInput.focus();
+            }
+        }
 
         async function resendOtp() {
             const btn = document.getElementById('btnResend');

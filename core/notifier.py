@@ -689,52 +689,134 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
     return summary
 
 
-def send_otp_email(recipient: str, otp_code: str, user_name: str = "") -> tuple[bool, str]:
-    """Envoie un code de vérification OTP à 6 chiffres par email."""
+def send_otp_email(recipient: str, otp_code: str, user_name: str = "", base_url: str = "") -> tuple[bool, str]:
+    """Envoie un email professionnel moderne contenant le code OTP et le lien direct de validation en 1 Clic."""
     dest = (recipient or "").strip()
     if not dest or "@" not in dest:
         return False, "Adresse email destinataire invalide."
 
     name_display = html.escape(user_name.strip()) if user_name else "Candidat"
-    subject = f"[{otp_code}] Votre code de vérification — Wadifa Pulse"
+    subject = f"{otp_code} est votre code de confirmation — Wadifa Pulse"
+
+    domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "wadifapulse.up.railway.app").strip()
+    root_url = (base_url or (f"https://{domain}" if not domain.startswith("http") else domain)).rstrip("/")
+    verify_url = f"{root_url}/verify-otp?code={otp_code}&email={urllib.parse.quote(dest)}"
 
     html_content = f"""
     <!DOCTYPE html>
     <html lang="fr">
-    <head><meta charset="utf-8"></head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 25px; margin: 0; color: #1e293b;">
-        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
-            <div style="background: linear-gradient(135deg, #15803d, #064e3b); padding: 25px 30px; color: #ffffff;">
-                <div style="font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; opacity: 0.85;">Wadifa Pulse · Sécurité & Authentification</div>
-                <h1 style="margin: 8px 0 0 0; font-size: 20px; font-weight: 800;">Vérification de votre adresse email</h1>
-            </div>
-            
-            <div style="padding: 30px; text-align: center;">
-                <p style="font-size: 15px; color: #334155; margin-top: 0; text-align: left;">
-                    Bonjour <strong>{name_display}</strong>,
-                </p>
-                <p style="font-size: 14px; color: #64748b; line-height: 1.6; text-align: left;">
-                    Merci de vous être inscrit sur Wadifa Pulse. Pour activer votre compte et accéder à votre espace de veille personnalisé, veuillez saisir le code de vérification suivant :
-                </p>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmation de compte — Wadifa Pulse</title>
+    </head>
+    <body style="margin: 0; padding: 30px 15px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; line-height: 1.6;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+            <tr>
+                <td align="center">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);">
+                        
+                        <!-- En-tête sobre et officiel -->
+                        <tr>
+                            <td style="padding: 26px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td>
+                                            <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">Wadifa<span style="color: #059669;">Pulse</span></span>
+                                        </td>
+                                        <td align="right">
+                                            <span style="display: inline-block; font-size: 11px; font-weight: 600; color: #059669; background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px;">
+                                                Portail Officiel
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
 
-                <div style="margin: 30px 0;">
-                    <div style="display: inline-block; background-color: #f0fdf4; border: 2px dashed #16a34a; border-radius: 12px; padding: 16px 36px;">
-                        <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #14532d;">
-                            {otp_code}
-                        </span>
-                    </div>
-                </div>
+                        <!-- Corps principal -->
+                        <tr>
+                            <td style="padding: 30px 32px 24px 32px;">
+                                <h1 style="margin: 0 0 14px 0; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px;">
+                                    Confirmez votre adresse email
+                                </h1>
+                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #334155;">
+                                    Bonjour <strong>{name_display}</strong>,
+                                </p>
+                                <p style="margin: 0 0 22px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                                    Merci d'avoir rejoint <strong>Wadifa Pulse</strong>. Pour finaliser votre inscription et activer la réception de vos alertes de concours, veuillez confirmer votre adresse email :
+                                </p>
 
-                <p style="font-size: 12px; color: #dc2626; font-weight: 600; margin-bottom: 25px;">
-                    ⏳ Ce code expire dans 15 minutes.
-                </p>
+                                <!-- Bouton 1 Clic -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0 20px 0;">
+                                    <tr>
+                                        <td align="center">
+                                            <a href="{verify_url}" target="_blank" style="display: inline-block; background-color: #059669; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 32px; border-radius: 8px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2); letter-spacing: 0.2px;">
+                                                Confirmer mon compte en 1 clic →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
 
-                <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 11px; color: #94a3b8; text-align: left; line-height: 1.5;">
-                    Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement ce message. Votre sécurité est notre priorité absolue.<br>
-                    <strong>Wadifa Pulse</strong> · Observatoire Autonome de Recrutement
-                </div>
-            </div>
-        </div>
+                                <!-- Séparateur OU -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0 18px 0;">
+                                    <tr>
+                                        <td style="border-bottom: 1px solid #e2e8f0;"></td>
+                                        <td width="130" align="center" style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; padding: 0 8px; white-space: nowrap;">
+                                            OU PAR CODE OTP
+                                        </td>
+                                        <td style="border-bottom: 1px solid #e2e8f0;"></td>
+                                    </tr>
+                                </table>
+
+                                <!-- Boîte du Code OTP (user-select: all pour sélection immédiate) -->
+                                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; text-align: center; margin: 14px 0;">
+                                    <div style="font-size: 12px; color: #64748b; font-weight: 500; margin-bottom: 6px;">
+                                        Code de validation à 6 chiffres :
+                                    </div>
+                                    <div style="font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a; user-select: all; -webkit-user-select: all; padding: 4px 0;">
+                                        {otp_code}
+                                    </div>
+                                    <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                                        Double-cliquez pour sélectionner et copier
+                                    </div>
+                                </div>
+
+                                <!-- Délai d'expiration 10 minutes -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 18px;">
+                                    <tr>
+                                        <td style="font-size: 12px; color: #b45309; font-weight: 500;">
+                                            ⏳ Ce lien direct et ce code restent valables pendant <strong>10 minutes</strong>.
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Lien direct de secours -->
+                                <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #64748b; line-height: 1.5;">
+                                    <span>Lien direct si le bouton ne s'ouvre pas :</span><br>
+                                    <a href="{verify_url}" target="_blank" style="color: #059669; text-decoration: underline; word-break: break-all; font-family: monospace; font-size: 11px;">
+                                        {verify_url}
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 18px 32px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+                                <p style="margin: 0 0 5px 0;">
+                                    Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.
+                                </p>
+                                <p style="margin: 0; color: #cbd5e1;">
+                                    © 2026 Wadifa Pulse · Observatoire et Veille Autonome de l'Emploi Public au Maroc.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
     </body>
     </html>
     """
