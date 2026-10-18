@@ -358,19 +358,31 @@ def send_email_direct(recipient: str, subject: str, html_body: str) -> tuple[boo
     msg["To"] = dest
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-    try:
-        if config.SMTP_PORT == 465:
-            server = smtplib.SMTP_SSL(config.SMTP_SERVER, config.SMTP_PORT, timeout=15)
-        else:
-            server = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT, timeout=15)
-            server.starttls()
+    # Tentative d'envoi avec basculement automatique de port (465 SSL <-> 587 STARTTLS)
+    ports_to_try = [465, 587] if config.SMTP_PORT == 465 else [587, 465]
+    last_error = "Échec de connexion au serveur SMTP."
 
-        server.login(config.EMAIL_SENDER, config.EMAIL_PASSWORD)
-        server.sendmail(config.EMAIL_SENDER, [dest], msg.as_string())
-        server.quit()
-        return True, "Email envoyé avec succès."
-    except Exception as e:
-        return False, str(e)
+    for port in ports_to_try:
+        try:
+            print(f"📧 [EMAIL ATTEMPT] Envoi vers {dest} via {config.SMTP_SERVER}:{port}...")
+            if port == 465:
+                server = smtplib.SMTP_SSL(config.SMTP_SERVER, port, timeout=4)
+            else:
+                server = smtplib.SMTP(config.SMTP_SERVER, port, timeout=4)
+                server.starttls()
+
+            clean_pw = config.EMAIL_PASSWORD.replace(" ", "").strip() if config.EMAIL_PASSWORD else ""
+            server.login(config.EMAIL_SENDER, clean_pw)
+            server.sendmail(config.EMAIL_SENDER, [dest], msg.as_string())
+            server.quit()
+            print(f"✅ [EMAIL SUCCESS] Email délivré à {dest} via port {port}.")
+            return True, "Email envoyé avec succès."
+        except Exception as e:
+            last_error = str(e)
+            print(f"⚠️ [EMAIL WARN] Échec sur port {port}: {e}")
+
+    print(f"❌ [EMAIL FAILED] Impossible d'envoyer l'email à {dest} après tentative sur ports 465 et 587: {last_error}")
+    return False, last_error
 
 
 BILINGUAL_GRADE_SYNONYMS = {

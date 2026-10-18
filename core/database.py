@@ -718,7 +718,9 @@ def register_user(name: str, email: str, password: str) -> tuple[bool, str, dict
                 conn.commit()
 
             # Envoi du code OTP par email
-            send_otp_email(email_clean, otp_code, name_clean)
+            ok_mail, mail_msg = send_otp_email(email_clean, otp_code, name_clean)
+            if not ok_mail:
+                print(f"⚠️ [OTP] Échec envoi email à {email_clean}: {mail_msg}")
             return True, "Code de validation envoyé par email.", user_dict, otp_code
 
         except Exception as e:
@@ -833,7 +835,9 @@ def resend_user_otp(email: str) -> tuple[bool, str]:
                 """, (new_otp, str(new_expiry), user_id))
                 conn.commit()
 
-            send_otp_email(email_clean, new_otp, u_name)
+            ok_mail, mail_msg = send_otp_email(email_clean, new_otp, u_name)
+            if not ok_mail:
+                print(f"⚠️ [OTP RESEND] Échec envoi email à {email_clean}: {mail_msg}")
             return True, "Un nouveau code de vérification a été envoyé sur votre boîte email."
         except Exception as e:
             return False, f"Erreur lors du renvoi : {e}"
