@@ -352,10 +352,13 @@ def _send_via_brevo_api(api_key: str, sender: str, recipient: str, subject: str,
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-        sender_email = sender or config.EMAIL_SENDER or "wadifa.pulse.contact@gmail.com"
+        # Brevo exige un expéditeur validé dans Brevo (abdelkhalekouaraqy@gmail.com).
+        sender_candidate = (sender or config.EMAIL_SENDER or "").strip()
+        sender_email = sender_candidate if (sender_candidate and "abdelkhalek" in sender_candidate) else "abdelkhalekouaraqy@gmail.com"
+        reply_to = "wadifapulse.contact@gmail.com"
         payload = {
             "sender": {"email": sender_email, "name": "Wadifa Pulse"},
-            "replyTo": {"email": "wadifa.pulse.contact@gmail.com", "name": "Wadifa Pulse Contact"},
+            "replyTo": {"email": reply_to, "name": "Wadifa Pulse Contact"},
             "to": [{"email": recipient}],
             "subject": subject,
             "htmlContent": html_body
@@ -697,7 +700,7 @@ def dispatch_all_user_alerts(jobs: list[dict]) -> dict:
 
 
 def send_otp_email(recipient: str, otp_code: str, user_name: str = "", base_url: str = "") -> tuple[bool, str]:
-    """Envoie un email de vérification OTP au design éditorial distinctif et institutionnel (Direction Gazette)."""
+    """Envoie un email de vérification OTP ultra-compact, direct et optimisé pour le bouton de copie Gmail."""
     dest = (recipient or "").strip()
     if not dest or "@" not in dest:
         return False, "Adresse email destinataire invalide."
@@ -705,174 +708,105 @@ def send_otp_email(recipient: str, otp_code: str, user_name: str = "", base_url:
     name_clean = user_name.strip() if user_name else ""
     greeting_html = f"Bonjour <strong>{html.escape(name_clean)}</strong>," if name_clean else "Bonjour,"
     plain_greeting = f"Bonjour {name_clean}," if name_clean else "Bonjour,"
-    subject = f"{otp_code} — Code de vérification Wadifa Pulse"
+
+    # Sujet au format sémantique officiel déclenchant le bandeau intelligent Gmail "Code demandé / Copier le code"
+    subject = f"{otp_code} est votre code de vérification — Wadifa Pulse"
 
     domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "wadifapulse.up.railway.app").strip()
     root_url = (base_url or (f"https://{domain}" if not domain.startswith("http") else domain)).rstrip("/")
     verify_url = f"{root_url}/verify-otp?code={otp_code}&email={urllib.parse.quote(dest)}"
 
-    # Version texte brut soignée pour l'accessibilité et les clients sans support HTML
-    text_content = f"""WADIFA PULSE
-Veille & Emploi Public · Maroc
---------------------------------------------------
-
-Vérifiez votre adresse e-mail
+    # Texte brut concis
+    text_content = f"""Votre code de vérification Wadifa Pulse est : {otp_code}
 
 {plain_greeting}
+Utilisez ce code de 6 chiffres pour valider votre compte. Il expire dans 10 minutes.
 
-Utilisez le code ci-dessous pour confirmer votre adresse e-mail et activer votre compte Wadifa Pulse :
-
-    CODE : {otp_code}
-
-Ce code est valable pendant 10 minutes.
-
-Vous pouvez également valider votre compte directement via ce lien :
+Lien direct de confirmation en 1 clic :
 {verify_url}
 
-Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité. Aucun compte ne sera activé sans ce code.
-
---------------------------------------------------
-Wadifa Pulse · Plateforme indépendante d'information et d'analyse de l'emploi public au Maroc
-Rabat, Maroc · Contact : wadifa.pulse.contact@gmail.com
+Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail en toute sécurité.
+Wadifa Pulse · Plateforme de l'Emploi Public au Maroc
+Contact : wadifapulse.contact@gmail.com
 """
 
-    # Version HTML : Direction Gazette Institutionnelle (Typographique, asymétrique, non-générique)
-    html_content = f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
+    # HTML Ultra-compact, direct et immédiat (Tout visible sur un seul écran sans défilement)
+    html_content = f"""<!DOCTYPE html>
+<html lang="fr">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="x-apple-disable-message-reformatting" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{subject}</title>
-    <!--[if mso]>
-    <style type="text/css">
-        body, table, td {{ font-family: Arial, Helvetica, sans-serif !important; }}
-    </style>
-    <![endif]-->
 </head>
-<body style="margin: 0; padding: 40px 15px; background-color: #F7F7F2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #202923; line-height: 1.6; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 25px 12px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; -webkit-font-smoothing: antialiased;">
     
-    <!-- Preheader masqué pour les clients de messagerie -->
-    <div style="display: none; font-size: 1px; color: #F7F7F2; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
-        Votre code de vérification Wadifa Pulse est {otp_code}. Valable pendant 10 minutes.
-        &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199; &shy;
+    <!-- Preheader optimisé pour l'extraction de code par Gmail -->
+    <div style="display: none; font-size: 1px; color: #f8fafc; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+        Votre code de vérification est {otp_code}. Valable 10 minutes.
     </div>
 
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
         <tr>
             <td align="center">
-                <!-- Conteneur principal (Architecture sobre, sans fioritures) -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #FFFFFF; border: 1px solid #E4EBE4; border-radius: 3px; overflow: hidden; text-align: left;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 420px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);">
                     
-                    <!-- Ligne structurelle tricolore (Forest Green + Hairline Champagne Gold) -->
+                    <!-- Header compact avec Logo et Nom -->
                     <tr>
-                        <td height="3" style="background-color: #064E3B; font-size: 1px; line-height: 3px;">&nbsp;</td>
-                    </tr>
-                    <tr>
-                        <td height="1" style="background-color: #B69A62; font-size: 1px; line-height: 1px;">&nbsp;</td>
-                    </tr>
-
-                    <!-- En-tête éditorial asymétrique -->
-                    <tr>
-                        <td style="padding: 28px 36px 20px 36px; border-bottom: 1px solid #E4EBE4;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <td style="padding: 22px 24px 14px 24px;">
+                            <table border="0" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td valign="middle">
-                                        <table border="0" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td valign="middle" style="padding-right: 10px;">
-                                                    <img src="{root_url}/static/icon_transparent.png" width="28" height="28" alt="Wadifa Pulse" style="display: block; border: 0;" />
-                                                </td>
-                                                <td valign="middle">
-                                                    <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: #202923;">Wadifa<span style="color: #064E3B;">Pulse</span></span>
-                                                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: #717D74; font-weight: 600; margin-top: 2px;">
-                                                        Veille & Emploi Public · Maroc
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <td valign="middle" style="padding-right: 10px;">
+                                        <img src="{root_url}/static/icon_transparent.png" width="28" height="28" alt="Wadifa Pulse" style="display: block; border: 0;">
                                     </td>
-                                    <td align="right" valign="middle">
-                                        <span style="font-family: 'SF Mono', Consolas, 'Roboto Mono', Menlo, monospace; font-size: 10px; color: #064E3B; background-color: #F0F4F0; padding: 4px 8px; border-radius: 2px; letter-spacing: 0.8px; font-weight: 600;">
-                                            SÉCURITÉ
-                                        </span>
+                                    <td valign="middle">
+                                        <span style="font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -0.4px;">Wadifa<span style="color: #047857;">Pulse</span></span>
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
 
-                    <!-- Corps de la dépêche -->
+                    <!-- Corps immédiat : Titre + Code + Bouton côte à côte -->
                     <tr>
-                        <td style="padding: 36px 36px 28px 36px;">
-                            <h1 style="font-family: Georgia, 'Times New Roman', -apple-system, serif; font-size: 22px; font-weight: 700; color: #202923; letter-spacing: -0.3px; line-height: 1.3; margin: 0 0 16px 0;">
-                                Vérifiez votre adresse e-mail
+                        <td style="padding: 0 24px 22px 24px;">
+                            <h1 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.3px;">
+                                Code de confirmation
                             </h1>
-                            
-                            <p style="font-size: 14px; color: #4A554D; line-height: 1.65; margin: 0 0 24px 0;">
-                                {greeting_html}<br />
-                                Utilisez le code ci-dessous pour confirmer votre adresse e-mail et activer votre compte Wadifa Pulse :
+                            <p style="font-size: 13px; color: #64748b; margin: 0 0 16px 0; line-height: 1.5;">
+                                {greeting_html} voici votre code de vérification :
                             </p>
 
-                            <!-- Bloc Héro OTP (Typographique, asymétrique, ancré par un liseré vert forêt) -->
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #FAFBF9; border: 1px solid #E4EBE4; border-left: 4px solid #064E3B; border-radius: 2px; margin: 10px 0 24px 0;">
+                            <!-- Boîte OTP claire et contrastée (Couleurs Wadifa Pulse) -->
+                            <div style="background-color: #f0fdf4; border: 1.5px solid #10b981; border-radius: 10px; padding: 14px 16px; text-align: center; margin-bottom: 14px;">
+                                <div style="font-family: 'SF Mono', Consolas, 'Roboto Mono', 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #064E3B; line-height: 1.1;">
+                                    {otp_code}
+                                </div>
+                                <div style="font-size: 11px; color: #047857; font-weight: 600; margin-top: 6px;">
+                                    ⏱ Expire dans 10 minutes
+                                </div>
+                            </div>
+
+                            <!-- Bouton direct 1-Clic -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 14px;">
                                 <tr>
-                                    <td style="padding: 20px 24px;">
-                                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #717D74; margin-bottom: 8px;">
-                                            Code de vérification temporaire
-                                        </div>
-                                        <div style="font-family: 'SF Mono', Consolas, 'Roboto Mono', 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 8px; color: #043C2E; line-height: 1.1; margin: 4px 0 8px 0;">
-                                            {otp_code}
-                                        </div>
-                                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #717D74; margin-top: 6px;">
-                                            Ce code expire dans <strong>10 minutes</strong>.
-                                        </div>
+                                    <td align="center">
+                                        <a href="{verify_url}" target="_blank" style="display: block; background-color: #047857; color: #ffffff; text-align: center; font-size: 13px; font-weight: 700; padding: 12px 18px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 4px rgba(4, 120, 87, 0.2);">
+                                            Confirmer mon compte en 1 clic &rarr;
+                                        </a>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Action secondaire (Validation en 1 Clic discrète et fonctionnelle) -->
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #E4EBE4; margin-top: 28px; padding-top: 22px;">
-                                <tr>
-                                    <td>
-                                        <p style="font-size: 13px; color: #4A554D; line-height: 1.5; margin: 0 0 12px 0;">
-                                            Vous pouvez également confirmer votre compte directement sans saisir le code :
-                                        </p>
-                                        <table border="0" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td align="left">
-                                                    <a href="{verify_url}" target="_blank" style="display: inline-block; background-color: #064E3B; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; padding: 11px 22px; border-radius: 3px; text-decoration: none; letter-spacing: 0.3px;">
-                                                        Confirmer mon adresse e-mail &rarr;
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        <div style="font-size: 11px; color: #8F998F; margin-top: 12px; line-height: 1.5;">
-                                            Lien direct : <a href="{verify_url}" target="_blank" style="color: #064E3B; text-decoration: underline; word-break: break-all; font-family: monospace; font-size: 11px;">{verify_url}</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Avertissement de sécurité sobre -->
-                            <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid #F1F5F1; font-size: 12px; color: #8F998F; line-height: 1.5;">
-                                Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité. Aucun compte ne sera activé sans ce code.
+                            <div style="font-size: 11px; color: #94a3b8; line-height: 1.4; border-top: 1px solid #f1f5f1; padding-top: 12px;">
+                                Si vous n'avez pas demandé ce code, ignorez simplement cet e-mail.
                             </div>
                         </td>
                     </tr>
 
-                    <!-- Pied de page institutionnel -->
+                    <!-- Footer sobre -->
                     <tr>
-                        <td style="background-color: #F7F7F2; padding: 22px 36px; border-top: 1px solid #E4EBE4; font-size: 11px; color: #717D74; line-height: 1.5;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                                <tr>
-                                    <td>
-                                        <div style="font-weight: 600; color: #202923; margin-bottom: 2px;">Wadifa Pulse</div>
-                                        <div>Plateforme indépendante d'information et d'analyse de l'emploi public au Maroc.</div>
-                                        <div style="color: #8F998F; margin-top: 4px;">Rabat, Maroc · Contact : wadifa.pulse.contact@gmail.com</div>
-                                    </td>
-                                </tr>
-                            </table>
+                        <td style="background-color: #f8fafc; padding: 10px 24px; border-top: 1px solid #f1f5f9; font-size: 10px; color: #94a3b8;">
+                            Wadifa Pulse · Plateforme de l'Emploi Public au Maroc
                         </td>
                     </tr>
 
@@ -881,8 +815,7 @@ Rabat, Maroc · Contact : wadifa.pulse.contact@gmail.com
         </tr>
     </table>
 </body>
-</html>
-"""
+</html>"""
 
     return send_email_direct(recipient=dest, subject=subject, html_body=html_content, text_body=text_content)
 
