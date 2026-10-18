@@ -33,6 +33,10 @@ from .database import (
     consume_telegram_link_token,
     disconnect_user_telegram,
     get_or_create_google_user,
+    create_email_change_request,
+    verify_and_apply_email_change,
+    get_pending_email_change,
+    cancel_email_change_request,
 )
 from .security import (
     is_disposable_email,
@@ -55,6 +59,7 @@ from .notifier import (
     send_otp_email,
     process_telegram_update,
     check_telegram_updates_for_token,
+    send_email_change_confirmation,
 )
 from .storage import (
     sync_all_storage,

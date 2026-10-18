@@ -143,6 +143,14 @@ def init_db(force: bool = False):
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]';
+            CREATE TABLE IF NOT EXISTS email_change_requests (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL,
+                new_email VARCHAR(255) NOT NULL,
+                token VARCHAR(100) UNIQUE NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
             """)
         else:
             cursor.executescript("""
@@ -191,6 +199,14 @@ def init_db(force: bool = False):
                 google_sheet_url TEXT,
                 alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]',
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS email_change_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                new_email TEXT NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """)
             cursor.execute("PRAGMA table_info(user_settings);")
@@ -248,6 +264,14 @@ def init_db(force: bool = False):
             google_sheet_url TEXT,
             alert_days TEXT DEFAULT '["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]',
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS email_change_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            new_email TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
         s_cur = s_conn.cursor()
@@ -927,6 +951,181 @@ def update_user_account(user_id: int, name: str, new_password: str = None) -> tu
             return True, "Profil mis à jour avec succès."
         except Exception as e:
             return False, f"Erreur lors de la mise à jour : {e}"
+
+
+def create_email_change_request(user_id: int, new_email: str) -> tuple[bool, str, str | None]:
+    """Valide et enregistre une demande de changement d'email avec token sécurisé."""
+    from .security import is_disposable_email
+    from datetime import datetime, timedelta
+
+    email_clean = (new_email or "").strip().lower()
+    if not email_clean or "@" not in email_clean or "." not in email_clean:
+        return False, "Adresse email invalide.", None
+
+    is_disp, disp_msg = is_disposable_email(email_clean)
+    if is_disp:
+        return False, disp_msg, None
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("SELECT id, email FROM users WHERE email = %s", (email_clean,))
+                existing = cursor.fetchone()
+                if existing:
+                    if existing[0] == user_id:
+                        return False, "Vous utilisez déjà cette adresse email pour votre compte.", None
+                    return False, "Cette adresse email est déjà associée à un autre compte.", None
+
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = %s", (user_id,))
+
+                token = secrets.token_urlsafe(32)
+                expires_at = datetime.utcnow() + timedelta(hours=24)
+                cursor.execute("""
+                    INSERT INTO email_change_requests (user_id, new_email, token, expires_at)
+                    VALUES (%s, %s, %s, %s);
+                """, (user_id, email_clean, token, expires_at))
+                conn.commit()
+            else:
+                cursor.execute("SELECT id, email FROM users WHERE email = ?", (email_clean,))
+                existing = cursor.fetchone()
+                if existing:
+                    if existing["id"] == user_id:
+                        return False, "Vous utilisez déjà cette adresse email pour votre compte.", None
+                    return False, "Cette adresse email est déjà associée à un autre compte.", None
+
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = ?", (user_id,))
+
+                token = secrets.token_urlsafe(32)
+                expires_at = datetime.utcnow() + timedelta(hours=24)
+                cursor.execute("""
+                    INSERT INTO email_change_requests (user_id, new_email, token, expires_at)
+                    VALUES (?, ?, ?, ?);
+                """, (user_id, email_clean, token, str(expires_at)))
+                conn.commit()
+
+            return True, "Demande enregistrée avec succès.", token
+        except Exception as e:
+            return False, f"Erreur lors de la demande : {e}", None
+
+
+def verify_and_apply_email_change(token: str) -> tuple[bool, str, dict | None]:
+    """Vérifie le token de confirmation et met à jour l'email de l'utilisateur."""
+    from datetime import datetime
+
+    token_clean = (token or "").strip()
+    if not token_clean:
+        return False, "Jeton de validation manquant.", None
+
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("""
+                    SELECT r.id, r.user_id, r.new_email, r.expires_at, u.name, u.email
+                    FROM email_change_requests r
+                    JOIN users u ON u.id = r.user_id
+                    WHERE r.token = %s;
+                """, (token_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    return False, "Ce lien de confirmation est invalide ou a déjà été utilisé.", None
+
+                req_id, user_id, new_email, expires_at, user_name, old_email = row
+
+                now_utc = datetime.utcnow()
+                exp_naive = expires_at.replace(tzinfo=None) if hasattr(expires_at, "replace") else expires_at
+                if now_utc > exp_naive:
+                    cursor.execute("DELETE FROM email_change_requests WHERE id = %s", (req_id,))
+                    conn.commit()
+                    return False, "Ce lien de confirmation a expiré. Veuillez faire une nouvelle demande depuis vos paramètres.", None
+
+                cursor.execute("SELECT id FROM users WHERE email = %s AND id != %s", (new_email, user_id))
+                if cursor.fetchone():
+                    cursor.execute("DELETE FROM email_change_requests WHERE id = %s", (req_id,))
+                    conn.commit()
+                    return False, "Cette adresse email a été réservée par un autre compte entre-temps.", None
+
+                cursor.execute("""
+                    UPDATE users SET email = %s, is_verified = TRUE WHERE id = %s;
+                """, (new_email, user_id))
+
+                cursor.execute("""
+                    UPDATE user_settings SET notification_email = %s 
+                    WHERE user_id = %s AND (notification_email = %s OR notification_email IS NULL);
+                """, (new_email, user_id, old_email))
+
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = %s", (user_id,))
+                conn.commit()
+
+                user_dict = {"id": user_id, "email": new_email, "name": user_name, "is_verified": True}
+                return True, "Votre adresse email a été modifiée avec succès !", user_dict
+
+            else:
+                cursor.execute("""
+                    SELECT r.id, r.user_id, r.new_email, r.expires_at, u.name, u.email
+                    FROM email_change_requests r
+                    JOIN users u ON u.id = r.user_id
+                    WHERE r.token = ?;
+                """, (token_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    return False, "Ce lien de confirmation est invalide ou a déjà été utilisé.", None
+
+                req_id, user_id, new_email = row["id"], row["user_id"], row["new_email"]
+                user_name, old_email = row["name"], row["email"]
+
+                cursor.execute("SELECT id FROM users WHERE email = ? AND id != ?", (new_email, user_id))
+                if cursor.fetchone():
+                    cursor.execute("DELETE FROM email_change_requests WHERE id = ?", (req_id,))
+                    conn.commit()
+                    return False, "Cette adresse email est déjà prise.", None
+
+                cursor.execute("UPDATE users SET email = ?, is_verified = 1 WHERE id = ?;", (new_email, user_id))
+                cursor.execute("UPDATE user_settings SET notification_email = ? WHERE user_id = ? AND (notification_email = ? OR notification_email IS NULL);", (new_email, user_id, old_email))
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = ?;", (user_id,))
+                conn.commit()
+
+                user_dict = {"id": user_id, "email": new_email, "name": user_name, "is_verified": True}
+                return True, "Votre adresse email a été modifiée avec succès !", user_dict
+
+        except Exception as e:
+            return False, f"Erreur lors de la validation : {e}", None
+
+
+def get_pending_email_change(user_id: int) -> dict | None:
+    """Récupère la demande de changement d'email en cours pour un utilisateur."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("SELECT new_email, expires_at FROM email_change_requests WHERE user_id = %s", (user_id,))
+                row = cursor.fetchone()
+                if row:
+                    return {"new_email": row[0], "expires_at": str(row[1])}
+            else:
+                cursor.execute("SELECT new_email, expires_at FROM email_change_requests WHERE user_id = ?", (user_id,))
+                row = cursor.fetchone()
+                if row:
+                    return {"new_email": row["new_email"], "expires_at": str(row["expires_at"])}
+        except Exception:
+            pass
+    return None
+
+
+def cancel_email_change_request(user_id: int) -> bool:
+    """Annule toute demande de changement d'email en cours pour un utilisateur."""
+    with get_db() as (conn, db_type):
+        cursor = conn.cursor()
+        try:
+            if db_type == "postgres":
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = %s", (user_id,))
+            else:
+                cursor.execute("DELETE FROM email_change_requests WHERE user_id = ?", (user_id,))
+            conn.commit()
+            return True
+        except Exception:
+            return False
 
 
 DEFAULT_ALERT_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]

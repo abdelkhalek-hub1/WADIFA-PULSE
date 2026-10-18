@@ -729,4 +729,62 @@ def check_telegram_updates_for_token(token: str) -> bool:
     return False
 
 
+def send_email_change_confirmation(new_email: str, user_name: str, token: str, base_url: str = "") -> tuple[bool, str]:
+    """Envoie un email contenant le lien sécurisé de confirmation pour le changement d'adresse email."""
+    dest = (new_email or "").strip()
+    if not dest or "@" not in dest:
+        return False, "Adresse email destinataire invalide."
+
+    root_url = (base_url or "https://wadifapulse.up.railway.app").rstrip("/")
+    verify_url = f"{root_url}/verify-email-change?token={token}"
+    name_display = html.escape(user_name.strip()) if user_name else "Candidat"
+    subject = "🔐 Confirmation de votre nouvelle adresse email — Wadifa Pulse"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 25px; margin: 0; color: #1e293b;">
+        <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+            <div style="background: linear-gradient(135deg, #15803d, #047857); padding: 28px 24px; text-align: center; color: #ffffff;">
+                <h1 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Wadifa Pulse</h1>
+                <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Confirmation de Changement d'Adresse Email</p>
+            </div>
+            <div style="padding: 28px 24px;">
+                <p style="font-size: 14px; margin-top: 0;">Bonjour <strong>{name_display}</strong>,</p>
+                <p style="font-size: 13px; color: #475569; line-height: 1.6;">
+                    Vous avez demandé à associer cette adresse email (<strong>{html.escape(dest)}</strong>) à votre compte <strong>Wadifa Pulse</strong>.
+                </p>
+                <p style="font-size: 13px; color: #475569; line-height: 1.6;">
+                    Pour valider définitivement cette modification et mettre à jour vos identifiants d'accès, cliquez sur le bouton sécurisé ci-dessous :
+                </p>
+                
+                <div style="text-align: center; margin: 28px 0;">
+                    <a href="{verify_url}" target="_blank" style="display: inline-block; background-color: #15803d; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; box-shadow: 0 2px 6px rgba(21, 128, 61, 0.3);">
+                        ✓ Confirmer mon nouvel email
+                    </a>
+                </div>
+
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 11px; color: #64748b; line-height: 1.5;">
+                    <p style="margin: 0;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :</p>
+                    <p style="margin: 4px 0 0 0; word-break: break-all; color: #047857; font-family: monospace;">{verify_url}</p>
+                </div>
+
+                <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin-top: 24px;">
+                    ⏳ <em>Ce lien sécurisé est valable pendant 24 heures. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité : votre adresse actuelle restera inchangée.</em>
+                </p>
+
+                <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center;">
+                    Wadifa Pulse · Système Autonome de Veille et d'Alertes de l'Emploi Public au Maroc
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    return send_email_direct(dest, subject, html_content)
+
+
+
 

@@ -44,6 +44,11 @@ from core import (
     process_telegram_update,
     check_telegram_updates_for_token,
     get_or_create_google_user,
+    create_email_change_request,
+    verify_and_apply_email_change,
+    get_pending_email_change,
+    cancel_email_change_request,
+    send_email_change_confirmation,
 )
 
 app = Flask(__name__, template_folder="templates")
@@ -478,8 +483,73 @@ def api_user_account():
     if ok:
         session["user"]["name"] = name
         session.modified = True
+        if new_password:
+            msg = "Profil et mot de passe enregistrés avec succès ! Vous pouvez désormais vous connecter soit avec votre email et ce mot de passe, soit via Google."
         return jsonify({"success": True, "message": msg})
     return jsonify({"success": False, "message": msg}), 400
+
+@app.route("/api/user/email/request-change", methods=["POST"])
+@login_required
+def api_request_email_change():
+    """Déclenche la demande de changement d'email et envoie un lien sécurisé."""
+    user = session.get("user")
+    user_id = user["id"]
+    payload = request.get_json() or {}
+    new_email = payload.get("new_email", "").strip()
+
+    ok, msg, token = create_email_change_request(user_id, new_email)
+    if not ok:
+        return jsonify({"success": False, "message": msg}), 400
+
+    base_url = request.host_url.rstrip("/")
+    if "railway.app" in base_url and base_url.startswith("http://"):
+        base_url = "https://" + base_url.split("://", 1)[1]
+
+    em_ok, em_msg = send_email_change_confirmation(new_email, user.get("name", ""), token, base_url)
+    if not em_ok:
+        cancel_email_change_request(user_id)
+        return jsonify({"success": False, "message": f"Échec d'envoi de l'email : {em_msg}"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": f"Un lien de confirmation a été envoyé à {new_email}. Veuillez consulter votre boîte de réception pour valider la modification.",
+        "pending_email": new_email
+    })
+
+@app.route("/api/user/email/pending-change", methods=["GET"])
+@login_required
+def api_get_pending_email_change():
+    """Vérifie si une demande de changement d'email est en attente."""
+    user = session.get("user")
+    user_id = user["id"]
+    pending = get_pending_email_change(user_id)
+    return jsonify({"success": True, "pending": pending})
+
+@app.route("/api/user/email/cancel-change", methods=["POST"])
+@login_required
+def api_cancel_email_change():
+    """Annule la demande de changement d'email en cours."""
+    user = session.get("user")
+    user_id = user["id"]
+    cancel_email_change_request(user_id)
+    return jsonify({"success": True, "message": "Demande de modification annulée avec succès."})
+
+@app.route("/verify-email-change", methods=["GET"])
+def verify_email_change():
+    """Valide le token de changement d'email lors du clic sur le lien."""
+    token = request.args.get("token", "").strip()
+    if not token:
+        return render_template("verify_email_result.html", success=False, message="Lien de confirmation manquant ou invalide.")
+
+    ok, msg, user_dict = verify_and_apply_email_change(token)
+    if ok and user_dict:
+        if "user" in session:
+            session["user"]["email"] = user_dict["email"]
+            session.modified = True
+        return render_template("verify_email_result.html", success=True, message=msg, new_email=user_dict["email"])
+    else:
+        return render_template("verify_email_result.html", success=False, message=msg)
+
 
 @app.route("/api/user/test/telegram", methods=["POST"])
 @login_required

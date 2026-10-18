@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changement d'Email — Wadifa Pulse</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Modern Typography: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between text-slate-100 antialiased selection:bg-emerald-500 selection:text-white bg-radial from-slate-800 to-slate-950">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/" class="flex items-center space-x-3 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg shadow-emerald-950/40 border border-emerald-400/20">
+                        <i class="ph-bold ph-shield-check text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-sm font-extrabold tracking-tight text-white block">Wadifa Pulse</span>
+                        <span class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase block">Sécurité des Comptes</span>
+                    </div>
+                </a>
+            </div>
+            <div>
+                <a href="/login" class="text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                    Se connecter &rarr;
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Card -->
+    <main class="flex-1 flex items-center justify-center p-6">
+        <div class="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-center">
+            
+            {% if success %}
+            <!-- Success Icon -->
+            <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i class="ph-bold ph-check-circle text-3xl"></i>
+            </div>
+
+            <h1 class="text-xl font-extrabold text-white tracking-tight">Adresse Email Mise à Jour !</h1>
+            
+            <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+                Votre nouvelle adresse email <strong class="text-emerald-400 font-mono">{{ new_email }}</strong> a été validée avec succès.
+            </p>
+
+            <div class="mt-6 p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-left space-y-2">
+                <div class="flex items-center space-x-2 text-xs text-slate-300">
+                    <i class="ph-bold ph-check text-emerald-400"></i>
+                    <span>Identifiants d'accès mis à jour</span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-slate-300">
+                    <i class="ph-bold ph-check text-emerald-400"></i>
+                    <span>Alertes quotidiennes redirigées</span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-slate-300">
+                    <i class="ph-bold ph-check text-emerald-400"></i>
+                    <span>Compte 100% sécurisé</span>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <a href="/settings" class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-600 transition shadow-sm flex items-center justify-center space-x-2">
+                    <i class="ph-bold ph-gear text-sm"></i>
+                    <span>Retourner aux Paramètres</span>
+                </a>
+                <a href="/" class="block text-xs text-slate-400 hover:text-white transition">
+                    Accéder au Tableau de Bord &rarr;
+                </a>
+            </div>
+
+            {% else %}
+            <!-- Error Icon -->
+            <div class="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i class="ph-bold ph-warning text-3xl"></i>
+            </div>
+
+            <h1 class="text-xl font-extrabold text-white tracking-tight">Validation Impossible</h1>
+            
+            <p class="text-xs text-rose-300/90 mt-3 leading-relaxed">
+                {{ message }}
+            </p>
+
+            <div class="mt-6 p-4 rounded-2xl bg-rose-950/20 border border-rose-900/40 text-xs text-slate-400 leading-relaxed text-left">
+                💡 Les liens de confirmation expirent après 24 heures ou deviennent invalides une fois déjà utilisés. Vous pouvez relancer une nouvelle demande à tout moment depuis votre profil.
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <a href="/settings" class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 transition shadow-sm flex items-center justify-center space-x-2">
+                    <i class="ph-bold ph-arrow-left text-sm"></i>
+                    <span>Retourner aux Paramètres</span>
+                </a>
+            </div>
+            {% endif %}
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-4 px-6 text-center text-xs text-slate-500 font-mono">
+        Wadifa Pulse &middot; Surveillance autonome conforme aux avis de concours du Journal Officiel
+    </footer>
+
+</body>
+</html>
