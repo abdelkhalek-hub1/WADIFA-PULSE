@@ -1,12 +1,7 @@
 name: "Moteur Autonome de Veille et d'Alerte Concours Maroc"
 
 on:
-  schedule:
-    # 07:00 UTC correspond exactement à 08:00 heure marocaine (GMT+1)
-    - cron: '0 7 * * *'
-    # 12:00 UTC correspond à 13:00 heure marocaine (veille de mi-journée)
-    - cron: '0 12 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Déclenchement manuel uniquement si nécessaire (Le cron principal est géré par cron-job.org)
 
 jobs:
   veille-et-alertes:

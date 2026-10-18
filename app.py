@@ -377,12 +377,10 @@ def api_scrape():
                     jobs_snapshot=jobs
                 )
                 
-                # 3. Synchronisation Sheets et alertes administrateur
+                # 3. Synchronisation Sheets
                 sheet_url = sync_all_storage(jobs)
-                telegram_ok = send_telegram_message(jobs, sheet_url)
-                email_ok = send_email_notification(jobs, sheet_url)
 
-                # 4. Distribution des alertes multi-utilisateurs personnalisées
+                # 4. Distribution des alertes multi-utilisateurs personnalisées (SaaS Multi-Tenant)
                 user_alerts_summary = dispatch_all_user_alerts(jobs)
                 print(f"👥 Alertes personnalisées diffusées : {user_alerts_summary}")
 
@@ -390,8 +388,8 @@ def api_scrape():
                     "success": True,
                     "total_jobs": len(jobs),
                     "urgent_jobs": urgent_count,
-                    "telegram_sent": bool(telegram_ok),
-                    "email_sent": bool(email_ok),
+                    "telegram_sent": user_alerts_summary.get("telegram_sent", 0) > 0,
+                    "email_sent": user_alerts_summary.get("email_sent", 0) > 0,
                     "users_alerted": user_alerts_summary.get("total_users", 0),
                     "message": f"{len(jobs)} concours synchronisés et alertes diffusées."
                 }

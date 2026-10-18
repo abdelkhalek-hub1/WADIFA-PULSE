@@ -78,21 +78,9 @@ def main():
     print("\nSynchronisation des fichiers et Google Sheets...")
     sheet_url = sync_all_storage(jobs)
 
-    # 4. Envoi des notifications (Telegram, Email, WhatsApp)
+    # 4. Diffusion exclusive des alertes multi-utilisateurs personnalisées (SaaS Multi-Tenant)
     if jobs:
-        print(f"\nDiffusion des alertes en cours pour {len(jobs)} concours actifs...")
-        
-        # Telegram
-        send_telegram_message(jobs, sheet_url)
-
-        # WhatsApp (si configuré)
-        if config.WHATSAPP_ENABLED:
-            send_whatsapp_message(jobs, sheet_url)
-
-        # Email administrateur
-        send_email_notification(jobs, sheet_url)
-
-        # 4.bis Multi-Tenant: Alertes personnalisées pour chaque utilisateur enregistré
+        print(f"\nDiffusion des alertes personnalisées pour {len(jobs)} concours actifs...")
         user_summary = dispatch_all_user_alerts(jobs)
         print(f"👥 Alertes SaaS diffusées : {user_summary['telegram_sent']} Telegram, {user_summary['email_sent']} Email.")
     else:
